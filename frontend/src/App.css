@@ -19,6 +19,7 @@
 
 .hero {
   position: relative;
+  overflow: hidden;
 
   .base,
   .framework,

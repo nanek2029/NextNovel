@@ -1,0 +1,38 @@
+.header {
+  height: 56px;
+  margin-bottom: 0px;
+  background-color: #3A5B22;
+  border-bottom: 3px solid #1e340e;
+}
+
+.inner {
+  height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link {
+  display: block;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: var(--mantine-radius-sm);
+  text-decoration: none;
+  color:  #80aa62;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+
+  @media (max-width: mantine-breakpoint-xs) {
+    border-radius: 0;
+    padding: var(--mantine-spacing-md);
+  }
+
+  @mixin hover {
+    color:#2a4318;
+  }
+
+  [data-mantine-color-scheme] &[data-active] {
+    /*background-color: #87CA00;*/
+    color: #a2ce75;
+  }
+}
