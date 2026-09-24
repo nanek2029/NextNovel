@@ -4,9 +4,13 @@ import { useDisclosure } from '@mantine/hooks';
 import classes from './Header.module.scss';
 
 const links = [
+  { link: '/', label: 'Home' },
   { link: '/login', label: 'Log In' },
   { link: '/signup', label: 'Register' },
-  { link: '/', label: 'Home' },
+  { link: '/bookshelf', label: 'Bookshelf'},
+  { link: '/recommendation', label: 'Find Your NextNovel'},
+  { link: '/account', label: 'My Account'},
+  
 ];
 
 export default function Header() {
@@ -29,7 +33,10 @@ export default function Header() {
   return (
     <header className={classes.header}>
       <Container fluid p={13} size="md" className={classes.inner}>
+        <Link to="/">
         <img width={30} src="/nextnovel_fav.png" alt="Logo" />
+        </Link>
+        
         <Group gap={5} visibleFrom="xs">
           {items}
         </Group>

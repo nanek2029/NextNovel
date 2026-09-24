@@ -1,3 +1,15 @@
+
+/* use these colors throughout the project, update here. use like: var(-- color name) */
+.root {
+  --bg-color: #FFFEF6;
+  --dark-green: #3A5B22;
+  --med-green: #f9f9f9;
+  --bright-green: #87CA00;
+  --border-on-bg: #D9D9D9;
+  --second-dark-green: #637a4e;
+  --dark-green-border: #1e340e; 
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
