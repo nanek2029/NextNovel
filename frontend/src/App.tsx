@@ -7,7 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
-import Header from './components/Header';
+import Header from './secondary/Header';
 import VerifyEmail from './pages/VerifyEmail';
 import Recommendation from './pages/Recommendation';
 import Bookshelf from './pages/Bookshelf';
