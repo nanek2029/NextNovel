@@ -57,7 +57,7 @@ return ( <>
 
                 </Stack>
                 
-                <Button color="#3A5B22" mb={0} style={{fontSize: 'var(--mantine-font-size-md'}} >Sign in</Button>
+                <Button color="#3A5B22" mb={0} style={{fontSize: 'var(--mantine-font-size-md'}} >Create Account</Button>
 
                 <Group mt="-xs" mb="lg" justify="center" gap={3}> 
                     <Text style={{fontWeight: '500', fontSize: 'var(--mantine-font-size-xs', color:'#637a4e'}}>Have an account?</Text>
