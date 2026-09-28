@@ -41,7 +41,7 @@ return ( <>
                                     fontWeight: 400
                                 }}
                             >
-                                forgot password
+                                Forgot password?
                             </Link>
                         </Group>
                     }
