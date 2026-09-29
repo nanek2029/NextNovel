@@ -12,6 +12,8 @@ import VerifyEmail from './pages/VerifyEmail';
 import Recommendation from './pages/Recommendation';
 import Bookshelf from './pages/Bookshelf';
 import Account from './pages/Account';
+import ResetCode from './pages/ResetCode';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   
@@ -29,6 +31,8 @@ export default function App() {
           <Route path="/bookshelf" element={<Bookshelf />}/>
           <Route path="/recommendation" element={<Recommendation/>}/>
           <Route path="/account" element={<Account/>}/>
+          <Route path="/reset-code" element={<ResetCode />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>
