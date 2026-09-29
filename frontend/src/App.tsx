@@ -14,6 +14,7 @@ import Bookshelf from './pages/Bookshelf';
 import Account from './pages/Account';
 import ResetCode from './pages/ResetCode';
 import ResetPassword from './pages/ResetPassword';
+import Search from './pages/Search';
 
 export default function App() {
   
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/account" element={<Account/>}/>
           <Route path="/reset-code" element={<ResetCode />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/search" element={<Search />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>

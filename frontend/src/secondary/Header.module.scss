@@ -36,3 +36,17 @@
     color: #a2ce75;
   }
 }
+
+.searchLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: #80AA62;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.searchLink:hover {
+  color: #95C06A;
+}
