@@ -4,6 +4,8 @@ import BookCard from '../secondary/BookCard';
 import type { BookStatus } from '../secondary/BookCard';
 import { dummyBookData } from '../secondary/dummyBookData';
 
+// this is just a placeholder to show what the bookshelf version of the book card looks like, feel free to change layout and size of book cards 
+
 
 export default function Bookshelf() {
 

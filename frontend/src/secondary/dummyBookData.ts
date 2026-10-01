@@ -18,6 +18,7 @@ export const dummyBookData: Book[] = [
         year: 2003,
         thumbnail:one,
         status: 'want to read',
+        length: 272,
     },
 
     {
@@ -28,6 +29,7 @@ export const dummyBookData: Book[] = [
         year: 2003,
         thumbnail: two,
         status: 'want to read',
+        length: 317,
     },
 
     {
@@ -38,6 +40,7 @@ export const dummyBookData: Book[] = [
         year: 2003,
         thumbnail: three,
         status: 'want to read',
+        length: 312,
     },
 
     {
@@ -48,6 +51,7 @@ export const dummyBookData: Book[] = [
         year: 2004,
         thumbnail: four,
         status: 'want to read',
+        length: 315,
     },
 
     {
@@ -58,6 +62,7 @@ export const dummyBookData: Book[] = [
         year: 2004,
         thumbnail:five,
         status: 'want to read',
+        length: 313,
     },
 
     {
@@ -68,5 +73,6 @@ export const dummyBookData: Book[] = [
         year: 2004,
         thumbnail:six,
         status: 'want to read',
+        length: 315,
     },
 ];

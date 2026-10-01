@@ -1,261 +1,330 @@
-import { Flex, Autocomplete, rem, ActionIcon, Menu, Divider, Text, } from '@mantine/core';
-import { useState } from 'react';
-import { MagnifyingGlassIcon, FunnelIcon, XIcon, ClockCounterClockwiseIcon, } from '@phosphor-icons/react';
+import { Flex, Autocomplete, rem, ActionIcon, Menu, Divider, Text, SimpleGrid, Button, ScrollArea } from '@mantine/core';
+import { useEffect, useState } from 'react';
+import { MagnifyingGlassIcon, FunnelIcon, XIcon } from '@phosphor-icons/react';
+import BookCard from '../secondary/BookCard';
+import { dummyBookData } from '../secondary/dummyBookData';
+
+type SearchHistoryItem = {
+    search: string;
+    searchType: string;
+};
 
 export default function Search() {
     const [search, setSearch] = useState('');
     const [searchType, setSearchType] = useState('title');
-    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+    const [historyOpened, setHistoryOpened] = useState(false);
 
-    // dummy data to be replaced with dummy data of full book card
-    const dummy_data = [
-        'Into the Wild',
-        'Fire and Ice',
-        'Forest of Secrets',
-        'Rising Storm',
-        'A Dangerous Path',
-        'The Darkest Hour',
-    ];
+    // close history window if clicking outside 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
 
-    // only show autocomplete when typing 
-    const autocomp =
-        search.length > 0
-            ? dummy_data.filter((book) =>
-                book.toLowerCase().includes(search.toLowerCase())
-            )
-            : [];
+            if (!target.closest('.search-container')) {
+                setHistoryOpened(false);
+            }
+        };
 
-    // input placeholder changes by filter selection
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Books to display
+    const matchingBooks =
+        searchType === 'length-asc'
+            ? [...dummyBookData].sort((a, b) => a.length - b.length)
+            : searchType === 'length-desc'
+                ? [...dummyBookData].sort((a, b) => b.length - a.length)
+                : search.length > 0
+                    ? dummyBookData.filter((book) => {
+                        if (searchType === 'title') {
+                            return book.title.toLowerCase().includes(search.toLowerCase());
+                        }
+
+                        if (searchType === 'author') {
+                            return book.author.toLowerCase().includes(search.toLowerCase());
+                        }
+
+                        return book.genre.toLowerCase().includes(search.toLowerCase());
+                    })
+                    : [];
+
+    // Add search to history
+    const addToHistory = () => {
+        if (search.length === 0 && searchType !== 'length-asc' && searchType !== 'length-desc') {
+            return;
+        }
+
+        setSearchHistory((previous) => {
+            const updatedHistory = [
+                { search, searchType },
+                ...previous.filter(
+                    (item) =>
+                        item.search !== search ||
+                        item.searchType !== searchType
+                ),
+            ];
+
+            return updatedHistory.slice(0, 5);
+        });
+
+        setHistoryOpened(false);
+    };
+
+    // where you can change input placeholder dpedning on filter active
     const placeholder =
         searchType === 'title'
             ? 'Search a book title...'
             : searchType === 'author'
                 ? 'Search by author...'
-                : 'Search by genre...';
+                : searchType === 'genre'
+                    ? 'Search by genre...'
+                    : searchType === 'length-asc'
+                        ? '(Ascending)'
+                        : '(Descending)';
+
+    // display name for history
+    const getHistoryLabel = (item: SearchHistoryItem) => {
+        if (item.searchType === 'length-asc') {
+            return 'Length (shortest first)';
+        }
+
+        if (item.searchType === 'length-desc') {
+            return 'Length (longest first)';
+        }
+
+        return item.search;
+    };
 
     return (
-        <Flex bg="#FFFEF6">
-            <Flex
-                justify="flex-start"
-                align="center"
-                direction="column"
-                mt="md"
-                style={{
-                    width: '100%',
-                    height: 'calc(100vh - 56px)',
-                    overflow: 'hidden',
-                }}
-            >
-                <Autocomplete
-                    value={search}
-                    onChange={setSearch}
+        <Flex bg="#FFFEF6" style={{ width: '100%', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+            <Flex justify="flex-start" align="center" direction="column" mt="md" style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
 
-                    // Only add to search history when an autocomplete
-                    // result is clicked
-                    onOptionSubmit={(value) => {
-                        setSearch(value);
-
-                        setSearchHistory((previous) => {
-                            const updatedHistory = [
-                                value,
-                                ...previous.filter((item) => item !== value),
-                            ];
-
-                            return updatedHistory.slice(0, 5);
-                        });
-                    }}
-
-                    label="Search for a book"
-                    placeholder={placeholder}
-                    data={autocomp}
-                    leftSection={
-                        <MagnifyingGlassIcon
-                            color="#80AA62"
-                            size={20}
-                            weight="bold"
-                        />
-                    }
-                    rightSection={
-                        <Flex align="center" gap={4}>
-                            {/* X button to clear input */}
-                            {search.length > 0 && (
-                                <ActionIcon
-                                    variant="subtle"
-                                    color="#3A5B22"
-                                    radius="xl"
-                                    size="sm"
-                                    onClick={() => setSearch('')}
-                                >
-                                    <XIcon
-                                        size={16}
-                                        weight="bold"
-                                    />
-                                </ActionIcon>
-                            )}
-
-                            {/* Filter by title/author/genre */}
-                            <Menu
-                                width={150}
-                                position="bottom-end"
-                                shadow={undefined}
-                                styles={{
-                                    dropdown: {
-                                        border: '1px solid #80AA62',
-                                        borderRadius: '12px',
-                                        backgroundColor: '#FFFFFF',
-                                        padding: '6px',
-                                    },
-
-                                    label: {
-                                        color: '#3A5B22',
-                                        fontSize:
-                                            'var(--mantine-font-size-sm)',
-                                        fontWeight: 500,
-                                    },
-
-                                    item: {
-                                        color: '#3A5B22',
-                                        fontSize:
-                                            'var(--mantine-font-size-sm)',
-                                        borderRadius: '8px',
-                                    },
-
-                                    itemLabel: {
-                                        color: '#3A5B22',
-                                    },
-                                }}
-                            >
-                                <Menu.Target>
-                                    <ActionIcon
-                                        variant="subtle"
-                                        color="#3A5B22"
-                                        radius="xl"
-                                        size="sm"
-                                    >
-                                        <FunnelIcon
-                                            size={18}
-                                            weight="bold"
-                                        />
+                {/* Search section */}
+                <div className="search-container" style={{ position: 'relative', width: 'calc(100vw - 400px)', flexShrink: 0 }}>
+                    <Autocomplete
+                        value={search}
+                        onChange={setSearch}
+                        onFocus={() => {
+                            if (searchHistory.length > 0) {
+                                setHistoryOpened(true);
+                            }
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                addToHistory();
+                            }
+                        }}
+                        label="Search for a book"
+                        placeholder={placeholder}
+                        data={[]}
+                        leftSection={<MagnifyingGlassIcon color="#80AA62" size={20} weight="bold" />}
+                        rightSection={
+                            <Flex align="center" gap={4}>
+                                {/* X button to clear input */}
+                                {search.length > 0 && (
+                                    <ActionIcon variant="subtle" color="#3A5B22" radius="xl" size="sm" onClick={() => setSearch('')}>
+                                        <XIcon size={16} weight="bold" />
                                     </ActionIcon>
-                                </Menu.Target>
+                                )}
 
-                                <Menu.Dropdown>
-                                    <Menu.Label>
-                                        Search by
-                                    </Menu.Label>
+                                {/* Filter by title/author/genre/length */}
+                                <Menu
+                                    width={180}
+                                    position="bottom-end"
+                                    shadow={undefined}
+                                    styles={{
+                                        dropdown: {
+                                            border: '1px solid #80AA62',
+                                            borderRadius: '12px',
+                                            backgroundColor: '#FFFFFF',
+                                            padding: '6px',
+                                        },
+                                        label: {
+                                            color: '#3A5B22',
+                                            fontSize: 'var(--mantine-font-size-sm)',
+                                            fontWeight: 500,
+                                        },
+                                        item: {
+                                            color: '#3A5B22',
+                                            fontSize: 'var(--mantine-font-size-sm)',
+                                            borderRadius: '8px',
+                                        },
+                                        itemLabel: {
+                                            color: '#3A5B22',
+                                        },
+                                    }}
+                                >
+                                    <Menu.Target>
+                                        <ActionIcon variant="subtle" color="#3A5B22" radius="xl" size="sm">
+                                            <FunnelIcon size={18} weight="bold" />
+                                        </ActionIcon>
+                                    </Menu.Target>
 
-                                    <Menu.Item
-                                        onClick={() => {
+                                    <Menu.Dropdown>
+                                        <Menu.Label>Search by</Menu.Label>
+
+                                        <Menu.Item onClick={() => {
                                             setSearchType('title');
                                             setSearch('');
-                                        }}
-                                    >
-                                        Title
-                                    </Menu.Item>
+                                        }}>
+                                            Title
+                                        </Menu.Item>
 
-                                    <Menu.Item
-                                        onClick={() => {
+                                        <Menu.Item onClick={() => {
                                             setSearchType('author');
                                             setSearch('');
-                                        }}
-                                    >
-                                        Author
-                                    </Menu.Item>
+                                        }}>
+                                            Author
+                                        </Menu.Item>
 
-                                    <Menu.Item
-                                        onClick={() => {
+                                        <Menu.Item onClick={() => {
                                             setSearchType('genre');
                                             setSearch('');
+                                        }}>
+                                            Genre
+                                        </Menu.Item>
+
+                                        <Menu.Item onClick={() => {
+                                            setSearchType('length-asc');
+                                            setSearch('');
+                                        }}>
+                                            Length (shortest first)
+                                        </Menu.Item>
+
+                                        <Menu.Item onClick={() => {
+                                            setSearchType('length-desc');
+                                            setSearch('');
+                                        }}>
+                                            Length (longest first)
+                                        </Menu.Item>
+                                    </Menu.Dropdown>
+                                </Menu>
+                            </Flex>
+                        }
+                        rightSectionWidth={75}
+                        mt="xl"
+                        radius={historyOpened ? '12px 12px 0 0' : 'xl'}
+                        w="100%"
+                        styles={{
+                            label: {
+                                fontWeight: '500',
+                                fontSize: 'var(--mantine-font-size-xl)',
+                                color: '#3A5B22',
+                            },
+                            input: {
+                                height: rem(50),
+                                fontSize: 'var(--mantine-font-size-md)',
+                                paddingRight: rem(75),
+                                '--input-bd-focus': '#80AA62',
+                                '--input-focus-ring-color': '#80AA62',
+                                borderColor: historyOpened ? '#80AA62' : undefined,
+                            },
+                            dropdown: {
+                                border: 'none',
+                                backgroundColor: 'transparent',
+                                padding: 0,
+                            },
+                            option: {
+                                display: 'none',
+                            },
+                        }}
+                    />
+
+                    {/* Recent searches dropdown */}
+                    {historyOpened && searchHistory.length > 0 && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                width: '100%',
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #80AA62',
+                                borderTop: 'none',
+                                borderRadius: '0 0 12px 12px',
+                                padding: '10px 14px 12px 14px',
+                                zIndex: 100,
+                                boxShadow: '0 6px 12px rgba(58, 91, 34, 0.18)',
+                            }}
+                        >
+                            <Flex justify="space-between" align="center">
+                                <Text size="sm" fw={500} c="#3A5B22">
+                                    Recent searches
+                                </Text>
+
+                                <Button variant="subtle" color="#3A5B22" size="compact-sm"
+                                    onClick={() => {
+                                        setSearchHistory([]);
+                                        setHistoryOpened(false);
+                                    }}
+                                >
+                                    Clear history
+                                </Button>
+                            </Flex>
+
+                            <Divider color="#80AA62" my="xs" />
+
+                            <Flex direction="column" gap={4}>
+                                {searchHistory.map((item, index) => (
+                                    <Text
+                                        key={`${item.searchType}-${item.search}-${index}`}
+                                        size="sm"
+                                        c="#637A4E"
+                                        style={{ cursor: 'pointer', padding: '4px 6px', borderRadius: '6px' }}
+                                        onClick={() => {
+                                            setSearchType(item.searchType);
+                                            setSearch(item.search);
+                                            setHistoryOpened(false);
                                         }}
                                     >
-                                        Genre
-                                    </Menu.Item>
-                                </Menu.Dropdown>
-                            </Menu>
-                        </Flex>
-                    }
-                    rightSectionWidth={75}
-                    mt="xl"
-                    radius="xl"
-                    w="calc(100vw - 400px)"
-                    styles={{
-                        label: {
-                            fontWeight: '500',
-                            fontSize: 'var(--mantine-font-size-xl)',
-                            color: '#3A5B22',
-                        },
-
-                        input: {
-                            height: rem(50),
-                            fontSize: 'var(--mantine-font-size-md)',
-                            paddingRight: rem(75),
-
-                            '--input-bd-focus': '#80AA62',
-                            '--input-focus-ring-color': '#80AA62',
-                        },
-
-                        // Autocomplete dropdown
-                        dropdown: {
-                            border: '1px solid #80AA62',
-                            borderRadius: '25px',
-                            backgroundColor: '#FFFFFF',
-                            padding: '6px',
-                        },
-
-                        option: {
-                            color: '#3A5B22',
-                            fontSize: '14px',
-                            borderRadius: '8px',
-                        },
-                    }}
-                    limit={5}
-                />
-
-                {/* Search history */}
-                {searchHistory.length > 0 && (
-                    <Flex
-                        direction="column"
-                        w="calc(100vw - 400px)"
-                        mt="md"
-                    >
-                        <Divider color="#80AA62" />
-
-                        <Text
-                            mt="sm"
-                            mb="xs"
-                            size="sm"
-                            fw={500}
-                            c="#3A5B22"
-                        >
-                            Recent searches
-                        </Text>
-
-                        {searchHistory.map((item, index) => (
-                            <Flex
-                                key={`${item}-${index}`}
-                                align="center"
-                                gap="sm"
-                                py={6}
-                                style={{
-                                    cursor: 'pointer',
-                                    borderRadius: '8px',
-                                }}
-                                onClick={() => setSearch(item)}
-                            >
-                                <ClockCounterClockwiseIcon
-                                    size={18}
-                                    color="#80AA62"
-                                />
-
-                                <Text
-                                    size="sm"
-                                    c="#3A5B22"
-                                >
-                                    {item}
-                                </Text>
+                                        {getHistoryLabel(item)}
+                                    </Text>
+                                ))}
                             </Flex>
-                        ))}
-                    </Flex>
+                        </div>
+                    )}
+                </div>
+
+                {/* Search results */}
+                {matchingBooks.length > 0 && (
+                    <ScrollArea
+                        w="calc(100vw - 400px)"
+                        mt="xl"
+                        mb="xl"
+                        style={{ flex: 1, minHeight: 0 }}
+                        scrollbars="y"
+                        type="auto"
+                        offsetScrollbars
+                        styles={{
+                            scrollbar: {
+                                '&[data-orientation="vertical"]': {
+                                    width: rem(8),
+                                },
+                            },
+                            thumb: {
+                                backgroundColor: '#80AA62',
+                                borderRadius: rem(10),
+                            },
+                        }}
+                    >
+                        {/* display books search result in grid  */}
+                        <SimpleGrid cols={2} spacing="md" verticalSpacing="xs" pr="sm">
+                            {matchingBooks.map((book) => (
+                                <BookCard
+                                    key={book.id}
+                                    book={book}
+                                    mode="recommendation"
+                                    onAdd={() => {
+                                        // Later: add book to bookshelf
+                                    }}
+                                />
+                            ))}
+                        </SimpleGrid>
+                    </ScrollArea>
                 )}
             </Flex>
         </Flex>

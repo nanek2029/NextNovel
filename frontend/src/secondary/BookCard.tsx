@@ -1,12 +1,14 @@
 import { ActionIcon, Flex, Image, Menu, Stack,Text, Group} from '@mantine/core';
-import {CaretDownIcon, PlusIcon, TrashIcon, } from '@phosphor-icons/react';
+import {CaretDownIcon, PlusIcon, TrashIcon, CheckIcon } from '@phosphor-icons/react';
+import { useState } from 'react';
+
+// **important ** the size is relative it just has an aspect ratio that it maintains. I was thinkining in the bookhelf it should be smaller. 
 
 
 // book cards can be recommendation (add to bookshelf) or bookshelf mode(alter status, delete)
 
 // type of book status
 export type BookStatus = 'read' | 'reading' | 'want to read' | 'DNF';
-
 
 // attributes of a book
 export type Book = {
@@ -17,6 +19,7 @@ export type Book = {
     year: number;
     thumbnail: string;
     status?: BookStatus;
+    length: number;
 };
 
 // parameters of a bookcard component 
@@ -38,6 +41,8 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
         'want to read',
         'DNF',
     ];
+
+    const [added, setAdded] = useState(false);
 
     return (
         <Flex bg="#FFFFFF" w="100%" p="sm" gap="md" align="center"
@@ -88,6 +93,15 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                     </Text>
                     <Text c="#637a4e" size="sm">
                         {book.year}
+                    </Text>
+                </Group>
+
+                <Group gap="xs">
+                    <Text c="#87CA00" fw={500} size="sm">
+                        Length:
+                    </Text>
+                    <Text c="#637a4e" size="sm">
+                        {book.length} pages
                     </Text>
                 </Group>
 
@@ -161,8 +175,31 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
 
             {/* If a bookcard is in recommendation mode you will only have the option to add it */}
             {mode === 'recommendation' && (
-                <ActionIcon variant="subtle" color="#3A5B22" radius="xl" size="md" onClick={onAdd}>
-                    <PlusIcon size={20} weight="bold" />
+                <ActionIcon
+                    variant={added ? 'filled' : 'outline'}
+                    color="#689f41"
+                    radius="xl"
+                    size="md"
+                    onClick={() => {
+                        setAdded(!added);
+                        onAdd?.();
+                    }}
+                    // styles for unchecked state border 
+                    styles={{
+                        root: {
+                            borderColor: '#689f41',
+                            borderWidth: '1.5px',
+                        },
+                    }}
+                >
+                    {/*toggle between added and unadded icon */}
+                    {added ? (
+                        <CheckIcon size={20} weight="bold"
+                        />
+                    ) : (
+                        <PlusIcon size={20} weight="bold"
+                        />
+                    )}
                 </ActionIcon>
             )}
         </Flex>
