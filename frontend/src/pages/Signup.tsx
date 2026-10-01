@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useState} from 'react'; 
 import Signup_pic from '../assets/sign_up_pic.jpg';
 
+// in the future the search results will show the book card component instead of just the text
+
 export default function Login() {
 
     const [value, setValue] = useState('');

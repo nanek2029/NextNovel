@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Burger, Container, Divider, Drawer, Group, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './Header.module.scss';
+import { MagnifyingGlassIcon } from '@phosphor-icons/react';
 
 const links = [
   { link: '/', label: 'Home' },
@@ -33,9 +34,18 @@ export default function Header() {
   return (
     <header className={classes.header}>
       <Container fluid p={13} size="md" className={classes.inner}>
-        <Link to="/">
-        <img width={30} src="/nextnovel_fav.png" alt="Logo" />
-        </Link>
+
+        <Group gap="md">
+          <Link to="/">
+            <img width={30} src="/nextnovel_fav.png" alt="Logo" />
+          </Link>
+
+          <Link to="/search" className={classes.searchLink}>
+            <MagnifyingGlassIcon size={20} weight="bold" />
+            <span>Search a book title...</span>
+          </Link>
+        </Group>
+        
         
         <Group gap={5} visibleFrom="xs">
           {items}

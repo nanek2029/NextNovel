@@ -55,7 +55,7 @@ export default function ResetPassword() {
 
     return (
         <Flex
-            bg="#FFFFE6"
+            bg="#FFFEF6"
             justify="center"
             align="center"
             style={{
@@ -93,7 +93,7 @@ export default function ResetPassword() {
 
                     <Button
                         color="#3A5B22"
-                        c="#FFFFE6"
+                        c="#FFFEF6"
                         size="md"
                         onClick={handleResetPassword}
                     >
