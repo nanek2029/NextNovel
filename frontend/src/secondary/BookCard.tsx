@@ -36,9 +36,9 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
 }: BookCardProps) {
 
     const statuses: BookStatus[] = [
-        'read',
-        'reading',
         'want to read',
+        'reading',
+        'read',
         'DNF',
     ];
 
