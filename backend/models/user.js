@@ -1,5 +1,55 @@
 const mongoose = require('mongoose');
 
+const bookSchema = new mongoose.Schema({
+    id: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    title: {
+        type: String,
+        required: true
+    },
+    author: {
+        type: String,
+        required: true
+    },
+    genre: {
+        type: String,
+        required: true
+    },
+    year: {
+        type: Number,
+        required: true
+    },
+    thumbnail: {
+        type: String,
+        required: true
+    },
+    status: {
+        type: String,
+        enum: ['read', 'reading', 'want to read', 'DNF'],
+    },
+    length: {
+        type: Number
+    }
+});
+
+const savedBookSchema = new mongoose.Schema({
+    book: {
+        type: bookSchema,
+        required: true
+    },
+    dateAdded: {
+        type: Date,
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5
+    }
+});
+
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -16,7 +66,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     savedBooks: {
-        type: [String],
+        type: [savedBookSchema],
         default: []
     }
 });
