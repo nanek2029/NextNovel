@@ -64,6 +64,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    resetPasswordTokenHash: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null
+    },
     savedBooks: {
         type: [savedBookSchema],
         default: []
