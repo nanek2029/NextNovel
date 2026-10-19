@@ -5,19 +5,42 @@
 // Search books through Google Books API
 const searchBooks = async (req, res) => {
     try {
-        const {q} = req.query;
+        const { q, type } = req.query;
         // require a search query
         if (!q || !q.trim()) {
             return res.status(400).json({
                 error: 'A book search query is required.',
             });
         }
+        let searchQuery = q.trim();
+
+        if (type === 'title') {
+            searchQuery = `intitle:${searchQuery}`;
+        } else if (type === 'author') {
+            searchQuery = `inauthor:${searchQuery}`;
+        } else if (type === 'genre') {
+            searchQuery = `subject:${searchQuery}`;
+        }
 
         const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
 
-        const response = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&key=${apiKey}`
+        const url = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&key=${apiKey}`
         );
+        let response;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+            response = await fetch(url);
+
+            if (response.status !== 503) {
+                break;
+            }
+
+            // Wait before retrying a temporary Google Books outage
+            await new Promise(resolve =>
+                setTimeout(resolve, 1000 * (attempt + 1))
+            );
+        }
 
         if (!response.ok) {
             console.error(
