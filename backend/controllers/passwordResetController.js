@@ -1,9 +1,14 @@
 // Omar - NextNovel - Sprint 1
 // PBI #5
-// Handles password reset token generation and recovery logic.
+// Handles password reset token generation and password recovery logic.
 
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const User = require('../models/user');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
+
+// Request a password reset
 const requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
@@ -14,21 +19,37 @@ const requestPasswordReset = async (req, res) => {
             });
         }
 
+        const user = await User.findOne({
+            email: email.trim().toLowerCase()
+        });
+
+        // Avoid revealing whether an email exists in the database
+        if (!user) {
+            return res.status(200).json({
+                message: 'If an account exists for that email, a password reset email has been sent.'
+            });
+        }
+
+        // Generate secure random reset token
         const resetToken = crypto.randomBytes(32).toString('hex');
 
+        // Store only the hashed version in MongoDB
         const hashedToken = crypto
             .createHash('sha256')
             .update(resetToken)
             .digest('hex');
 
-        const resetTokenExpires = Date.now() + 15 * 60 * 1000;
+        // Token expires in 15 minutes
+        user.resetPasswordTokenHash = hashedToken;
+        user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-        // User database integration will be added once User.js is available.
+        await user.save();
+
+        // Send the raw reset token to the user's email
+        await sendPasswordResetEmail(user.email, resetToken);
+
         return res.status(200).json({
-            message: 'Password reset token generated successfully.',
-            resetToken,
-            hashedToken,
-            resetTokenExpires
+            message: 'If an account exists for that email, a password reset email has been sent.'
         });
 
     } catch (error) {
@@ -40,6 +61,7 @@ const requestPasswordReset = async (req, res) => {
     }
 };
 
+// Reset the user's password
 const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
@@ -50,17 +72,39 @@ const resetPassword = async (req, res) => {
             });
         }
 
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters long.'
+            });
+        }
+
         const hashedToken = crypto
             .createHash('sha256')
             .update(token)
             .digest('hex');
 
-        // Database lookup and password update will be added
-        // once Brady's User model is available.
+        const user = await User.findOne({
+            resetPasswordTokenHash: hashedToken,
+            resetPasswordExpires: { $gt: new Date() }
+        });
 
-        return res.status(501).json({
-            message: 'Password reset validation passed. Database integration pending.',
-            hashedToken
+        if (!user) {
+            return res.status(400).json({
+                message: 'Reset token is invalid or has expired.'
+            });
+        }
+
+        // Hash and save the new password
+        user.passwordHash = await bcrypt.hash(newPassword, 10);
+
+        // Clear reset information so the token cannot be reused
+        user.resetPasswordTokenHash = null;
+        user.resetPasswordExpires = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            message: 'Password updated successfully.'
         });
 
     } catch (error) {
