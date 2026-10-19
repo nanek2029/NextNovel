@@ -1,5 +1,5 @@
 // Omar - NextNovel Sprint 1
-// Jira Task: PBI #3 and PBI #5
+// Jira Tasks: PBI #3, PBI #5, and PBI #10
 // Initializes the NextNovel Express backend server.
 // Configures JSON request handling, authentication routes,
 // and connects the backend to MongoDB using Mongoose.
@@ -13,6 +13,7 @@ const { MongoStore } = require('connect-mongo');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const passwordResetRoutes = require('./routes/passwordResetRoutes');
+const bookRoutes = require('./routes/bookRoutes');
 
 
 // Creating the Express application
@@ -42,7 +43,7 @@ const PORT = process.env.PORT || 5000;
 // Connect authentication routes to the backend server
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', passwordResetRoutes);
-
+app.use('/api/books', bookRoutes);
 // Test route to verify backend is running
 app.get('/', (req, res) => {
     res.send('NextNovel API is running!');
