@@ -1,7 +1,6 @@
-import { Avatar, Button, FileButton, Flex, PasswordInput,Stack, TextInput, Title,} from '@mantine/core';
-import { useState } from 'react';
+import { Avatar, Button, FileButton, Flex, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 
 export default function Account() {
 
@@ -9,9 +8,31 @@ export default function Account() {
 
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
 
-    const username = 'username';
-    const email = 'user@email.com';
-    const password = 'password123';
+    // State for actual user information loaded from backend
+    const [username, setUsername] = useState('Loading...');
+    const [email, setEmail] = useState('Loading...');
+    const password = 'password123'; // Masked or placeholder representation
+
+    // Fetch actual user account data on mount
+    useEffect(() => {
+        const fetchAccountData = async () => {
+            try {
+                const response = await fetch('/api/auth/account');
+                const data = await response.json();
+
+                if (response.ok && data.user) {
+                    setUsername(data.user.username);
+                    setEmail(data.user.email);
+                } else {
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error('Failed to fetch account info:', error);
+            }
+        };
+
+        fetchAccountData();
+    }, [navigate]);
 
     const profilePictureUrl = profilePicture
         ? URL.createObjectURL(profilePicture)
@@ -65,7 +86,7 @@ export default function Account() {
                             radius="xl"
                             color="#3A5B22"
                         >
-                            {username.charAt(0).toUpperCase()}
+                            {username !== 'Loading...' ? username.charAt(0).toUpperCase() : '?'}
                         </Avatar>
 
                         <FileButton
@@ -158,19 +179,51 @@ export default function Account() {
 
                 {/* Buttons */}
                 <Stack w="100%" gap="sm" mt="md" > 
+
+                {/* reset password button */}
                   <Button c="#3A5B22" color="#DEEFC6" mb={0} w="100%" 
                     style={{ fontSize: 'var(--mantine-font-size-md)', }} 
                     onClick={() => navigate('/reset-password')} > 
-                    Reset Password </Button> 
+                    Reset Password 
+                  </Button> 
                     
+                {/* logout button */}
                   <Button color="#3A5B22" mb={0} w="100%" 
                     style={{ fontSize: 'var(--mantine-font-size-md)', }} 
-                    onClick={() => navigate('/')} > 
-                    Log Out </Button> 
+                    onClick={async () => {
+                        try {
+                            await fetch('/api/auth/logout', { method: 'POST' });
+                            navigate('/login');
+                        } catch (error) {
+                            console.error('Logout failed', error);
+                        }
+                    }} > 
+                    Log Out 
+                  </Button> 
+
+                  {/* delete acc button */}
+                  <Button color="red" variant="subtle" w="100%" 
+                    style={{ fontSize: 'var(--mantine-font-size-md)' }} 
+                    onClick={async () => {
+                        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                            try {
+                                const response = await fetch('/api/auth/delete', { method: 'DELETE' });
+                                if (response.ok) {
+                                    navigate('/signup');
+                                } else {
+                                    alert('Failed to delete account.');
+                                }
+                            } catch (error) {
+                                console.error('Account deletion error:', error);
+                            }
+                        }
+                    }}
+                  > 
+                    Delete Account 
+                  </Button>
                 </Stack>
 
             </Stack>
         </Flex>
     );
 }
-

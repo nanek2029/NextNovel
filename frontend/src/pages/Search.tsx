@@ -2,7 +2,6 @@ import { Flex, Autocomplete, rem, ActionIcon, Menu, Divider, Text, SimpleGrid, B
 import { useEffect, useState } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, XIcon } from '@phosphor-icons/react';
 import BookCard from '../secondary/BookCard';
-import { dummyBookData } from '../secondary/dummyBookData';
 
 type SearchHistoryItem = {
     search: string;
@@ -14,6 +13,8 @@ export default function Search() {
     const [searchType, setSearchType] = useState('title');
     const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
     const [historyOpened, setHistoryOpened] = useState(false);
+    const [books, setBooks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     // close history window if clicking outside 
     useEffect(() => {
@@ -32,30 +33,46 @@ export default function Search() {
         };
     }, []);
 
-    // Books to display
-    const matchingBooks =
-        searchType === 'length-asc'
-            ? [...dummyBookData].sort((a, b) => a.length - b.length)
-            : searchType === 'length-desc'
-                ? [...dummyBookData].sort((a, b) => b.length - a.length)
-                : search.length > 0
-                    ? dummyBookData.filter((book) => {
-                        if (searchType === 'title') {
-                            return book.title.toLowerCase().includes(search.toLowerCase());
-                        }
+    // search books endpoint 
+    const fetchBooks = async (query: string, type: string) => {
+        if (!query.trim() || type.startsWith('length')) return;
 
-                        if (searchType === 'author') {
-                            return book.author.toLowerCase().includes(search.toLowerCase());
-                        }
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/books?q=${encodeURIComponent(query)}&type=${type}`);
+            const data = await response.json();
+            if (response.ok) {
+                setBooks(data.books || []);
+            } else {
+                setBooks([]);
+            }
+        } catch (error) {
+            console.error('Book search failed:', error);
+            setBooks([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                        return book.genre.toLowerCase().includes(search.toLowerCase());
-                    })
-                    : [];
+    // sort ascending or descending 
+    const matchingBooks = (() => {
+        if (searchType === 'length-asc') {
+            return [...books].sort((a, b) => (a.pageCount || 0) - (b.pageCount || 0));
+        }
+        if (searchType === 'length-desc') {
+            return [...books].sort((a, b) => (b.pageCount || 0) - (a.pageCount || 0));
+        }
+        return books;
+    })();
 
-    // Add search to history
+    // add search to history and trigger backend fetch
     const addToHistory = () => {
-        if (search.length === 0 && searchType !== 'length-asc' && searchType !== 'length-desc') {
+        if (search.length === 0 && !searchType.startsWith('length')) {
             return;
+        }
+
+        if (!searchType.startsWith('length')) {
+            fetchBooks(search, searchType);
         }
 
         setSearchHistory((previous) => {
@@ -74,7 +91,6 @@ export default function Search() {
         setHistoryOpened(false);
     };
 
-    // where you can change input placeholder dpedning on filter active
     const placeholder =
         searchType === 'title'
             ? 'Search a book title...'
@@ -83,19 +99,12 @@ export default function Search() {
                 : searchType === 'genre'
                     ? 'Search by genre...'
                     : searchType === 'length-asc'
-                        ? '(Ascending)'
-                        : '(Descending)';
+                        ? 'Sorted by length (shortest first)'
+                        : 'Sorted by length (longest first)';
 
-    // display name for history
     const getHistoryLabel = (item: SearchHistoryItem) => {
-        if (item.searchType === 'length-asc') {
-            return 'Length (shortest first)';
-        }
-
-        if (item.searchType === 'length-desc') {
-            return 'Length (longest first)';
-        }
-
+        if (item.searchType === 'length-asc') return 'Length (shortest first)';
+        if (item.searchType === 'length-desc') return 'Length (longest first)';
         return item.search;
     };
 
@@ -124,14 +133,12 @@ export default function Search() {
                         leftSection={<MagnifyingGlassIcon color="#80AA62" size={20} weight="bold" />}
                         rightSection={
                             <Flex align="center" gap={4}>
-                                {/* X button to clear input */}
                                 {search.length > 0 && (
-                                    <ActionIcon variant="subtle" color="#3A5B22" radius="xl" size="sm" onClick={() => setSearch('')}>
+                                    <ActionIcon variant="subtle" color="#3A5B22" radius="xl" size="sm" onClick={() => { setSearch(''); setBooks([]); }}>
                                         <XIcon size={16} weight="bold" />
                                     </ActionIcon>
                                 )}
 
-                                {/* Filter by title/author/genre/length */}
                                 <Menu
                                     width={180}
                                     position="bottom-end"
@@ -143,19 +150,9 @@ export default function Search() {
                                             backgroundColor: '#FFFFFF',
                                             padding: '6px',
                                         },
-                                        label: {
-                                            color: '#3A5B22',
-                                            fontSize: 'var(--mantine-font-size-sm)',
-                                            fontWeight: 500,
-                                        },
-                                        item: {
-                                            color: '#3A5B22',
-                                            fontSize: 'var(--mantine-font-size-sm)',
-                                            borderRadius: '8px',
-                                        },
-                                        itemLabel: {
-                                            color: '#3A5B22',
-                                        },
+                                        label: { color: '#3A5B22', fontSize: 'var(--mantine-font-size-sm)', fontWeight: 500 },
+                                        item: { color: '#3A5B22', fontSize: 'var(--mantine-font-size-sm)', borderRadius: '8px' },
+                                        itemLabel: { color: '#3A5B22' },
                                     }}
                                 >
                                     <Menu.Target>
@@ -166,41 +163,11 @@ export default function Search() {
 
                                     <Menu.Dropdown>
                                         <Menu.Label>Search by</Menu.Label>
-
-                                        <Menu.Item onClick={() => {
-                                            setSearchType('title');
-                                            setSearch('');
-                                        }}>
-                                            Title
-                                        </Menu.Item>
-
-                                        <Menu.Item onClick={() => {
-                                            setSearchType('author');
-                                            setSearch('');
-                                        }}>
-                                            Author
-                                        </Menu.Item>
-
-                                        <Menu.Item onClick={() => {
-                                            setSearchType('genre');
-                                            setSearch('');
-                                        }}>
-                                            Genre
-                                        </Menu.Item>
-
-                                        <Menu.Item onClick={() => {
-                                            setSearchType('length-asc');
-                                            setSearch('');
-                                        }}>
-                                            Length (shortest first)
-                                        </Menu.Item>
-
-                                        <Menu.Item onClick={() => {
-                                            setSearchType('length-desc');
-                                            setSearch('');
-                                        }}>
-                                            Length (longest first)
-                                        </Menu.Item>
+                                        <Menu.Item onClick={() => { setSearchType('title'); }}>Title</Menu.Item>
+                                        <Menu.Item onClick={() => { setSearchType('author'); }}>Author</Menu.Item>
+                                        <Menu.Item onClick={() => { setSearchType('genre'); }}>Genre</Menu.Item>
+                                        <Menu.Item onClick={() => { setSearchType('length-asc'); }}>Length (shortest first)</Menu.Item>
+                                        <Menu.Item onClick={() => { setSearchType('length-desc'); }}>Length (longest first)</Menu.Item>
                                     </Menu.Dropdown>
                                 </Menu>
                             </Flex>
@@ -209,32 +176,8 @@ export default function Search() {
                         mt="xl"
                         radius={historyOpened ? '12px 12px 0 0' : 'xl'}
                         w="100%"
-                        styles={{
-                            label: {
-                                fontWeight: '500',
-                                fontSize: 'var(--mantine-font-size-xl)',
-                                color: '#3A5B22',
-                            },
-                            input: {
-                                height: rem(50),
-                                fontSize: 'var(--mantine-font-size-md)',
-                                paddingRight: rem(75),
-                                '--input-bd-focus': '#80AA62',
-                                '--input-focus-ring-color': '#80AA62',
-                                borderColor: historyOpened ? '#80AA62' : undefined,
-                            },
-                            dropdown: {
-                                border: 'none',
-                                backgroundColor: 'transparent',
-                                padding: 0,
-                            },
-                            option: {
-                                display: 'none',
-                            },
-                        }}
                     />
 
-                    {/* Recent searches dropdown */}
                     {historyOpened && searchHistory.length > 0 && (
                         <div
                             style={{
@@ -252,15 +195,9 @@ export default function Search() {
                             }}
                         >
                             <Flex justify="space-between" align="center">
-                                <Text size="sm" fw={500} c="#3A5B22">
-                                    Recent searches
-                                </Text>
-
+                                <Text size="sm" fw={500} c="#3A5B22">Recent searches</Text>
                                 <Button variant="subtle" color="#3A5B22" size="compact-sm"
-                                    onClick={() => {
-                                        setSearchHistory([]);
-                                        setHistoryOpened(false);
-                                    }}
+                                    onClick={() => { setSearchHistory([]); setHistoryOpened(false); }}
                                 >
                                     Clear history
                                 </Button>
@@ -278,6 +215,9 @@ export default function Search() {
                                         onClick={() => {
                                             setSearchType(item.searchType);
                                             setSearch(item.search);
+                                            if (!item.searchType.startsWith('length')) {
+                                                fetchBooks(item.search, item.searchType);
+                                            }
                                             setHistoryOpened(false);
                                         }}
                                     >
@@ -299,19 +239,7 @@ export default function Search() {
                         scrollbars="y"
                         type="auto"
                         offsetScrollbars
-                        styles={{
-                            scrollbar: {
-                                '&[data-orientation="vertical"]': {
-                                    width: rem(8),
-                                },
-                            },
-                            thumb: {
-                                backgroundColor: '#80AA62',
-                                borderRadius: rem(10),
-                            },
-                        }}
                     >
-                        {/* display books search result in grid  */}
                         <SimpleGrid cols={2} spacing="md" verticalSpacing="xs" pr="sm">
                             {matchingBooks.map((book) => (
                                 <BookCard

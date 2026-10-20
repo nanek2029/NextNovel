@@ -146,8 +146,85 @@ const logout = (req, res) => {
     });
 };
 
+// deleting current user acc
+const deleteAccount = async (req, res) => {
+    // make sure the user is authenticated before allowing account deletion
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: 'Unauthorized. Please log in.'
+            });
+        }
+
+        //delete  from MongoDB
+        const deletedUser = await User.findByIdAndDelete(req.session.userId);
+
+        if (!deletedUser) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+
+        // end the session and clear cookie
+        req.session.destroy((error) => {
+            if (error) {
+                console.error('Session destruction failed:', error.message);
+                return res.status(500).json({
+                    message: 'Account deleted, but unable to clear session.'
+                });
+            }
+
+            res.clearCookie('connect.sid');
+            return res.status(200).json({
+                message: 'Account deleted successfully.'
+            });
+        });
+
+    } catch (error) {
+        console.error('Account deletion failed:', error.message);
+        return res.status(500).json({
+            message: 'Internal server error while deleting account.'
+        });
+    }
+};
+
+// retrieve user profile data
+const getAccount = async (req, res) => {
+
+    // must be logged in
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({
+                message: 'Unauthorized. Please log in.'
+            });
+        }
+
+        //retrieve data but not password
+        const user = await User.findById(req.session.userId).select('-passwordHash');
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+        return res.status(200).json({
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('Failed to fetch user profile:', error.message);
+        return res.status(500).json({
+            message: 'Internal server error while fetching user profile.'
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
-    logout
+    logout,
+    deleteAccount,
+    getAccount
 };
