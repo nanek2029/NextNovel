@@ -8,11 +8,16 @@ const router = express.Router();
 const {
     register,
     login,
-    logout
+    logout,
+    deleteAccount,
+    getAccount
 } = require('../controllers/authController');
 
 router.post('/register', register);
 router.post('/login', login);
 router.post('/logout', logout);
+router.delete('/delete', deleteAccount);
+router.get('/account', getAccount);
+
 
 module.exports = router;

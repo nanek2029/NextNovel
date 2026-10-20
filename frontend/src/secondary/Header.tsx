@@ -3,6 +3,7 @@ import { Burger, Container, Divider, Drawer, Group, ScrollArea } from '@mantine/
 import { useDisclosure } from '@mantine/hooks';
 import classes from './Header.module.scss';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
 
 const links = [
   { link: '/', label: 'Home' },
@@ -17,8 +18,38 @@ const links = [
 export default function Header() {
   const [opened, { toggle, close }] = useDisclosure(false);
   const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const items = links.map((link) => (
+  // Check login status on mount and when location changes
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/account');
+        if (response.ok) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, [location]);
+
+  // dont show some buttons based on login status 
+  const filteredLinks = links.filter((link) => {
+    if (isLoggedIn && (link.link === '/login' || link.link === '/signup')) {
+      return false; // hide Log In and Register when logged in
+    }
+    if (!isLoggedIn && link.link === '/account') {
+      return false; // hide My Account when logged out
+    }
+    return true;
+  });
+
+  const items = filteredLinks.map((link) => (
 
     <Link
       key={link.label}

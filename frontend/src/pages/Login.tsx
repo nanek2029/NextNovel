@@ -1,11 +1,54 @@
 import { Group, Text, Image, Title, Container, Stack, Button, PasswordInput, TextInput, Flex } from '@mantine/core';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState} from 'react'; 
 import Login_pic from '../assets/log_in_pic.jpg';
 
 export default function Login() {
+    const navigate = useNavigate();
 
-    const [value, setValue] = useState('');
+    const [identifier, setIdentifier] = useState(''); // username or email
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    // backend endpoint
+    const handleLogin = async () => {
+        setError('');
+
+        // check that username / email and password are both filled in
+        if (!identifier.trim() || !password) {
+            setError('Both username/email and password are required.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    // send as email if it contains '@', otherwise send as username
+                    email: identifier.includes('@') ? identifier.trim() : undefined,
+                    username: !identifier.includes('@') ? identifier.trim() : undefined,
+                    password: password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            // if successful go to the search page
+            navigate('/search');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
 return ( <>
 <Flex bg="#FFFEF6" direction="row" style={{ width: '100%', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
@@ -15,6 +58,8 @@ return ( <>
 
             <Stack>
                 <Title c="#3A5B22" mb="xl" order={2}>Welcome back to your favorite place.</Title>
+                
+                {error && <Text c="red" size="sm">{error}</Text>}
 
                 <TextInput
                     c="#3A5B22"
@@ -24,6 +69,8 @@ return ( <>
                                 backgroundColor: 'transparent',
                                 borderColor: '#D9D9D9'},
                             label: {fontWeight: '500', fontSize: 'var(--mantine-font-size-md'}}}
+                    value={identifier}
+                    onChange={(event) => setIdentifier(event.currentTarget.value)}
                     />
 
                 <PasswordInput 
@@ -49,12 +96,12 @@ return ( <>
                     styles={{ label: {width: '100%'}, input: {
                                 backgroundColor: 'transparent',
                                 borderColor: '#D9D9D9'},}}
-                    value={value}
+                    value={password}
                     mb="sm"
-                    onChange={(event) => setValue(event.currentTarget.value)}
+                    onChange={(event) => setPassword(event.currentTarget.value)}
                     />
 
-                <Button color="#3A5B22" mb={0} style={{fontSize: 'var(--mantine-font-size-md'}} >Sign in</Button>
+                <Button loading={loading} onClick={handleLogin} color="#3A5B22" mb={0} style={{fontSize: 'var(--mantine-font-size-md'}} >Sign in</Button>
 
                 <Group mt="-xs" mb="lg" justify="center" gap={3}> 
                     <Text style={{fontWeight: '500', fontSize: 'var(--mantine-font-size-xs', color:'#637a4e'}}>Don't have an account?</Text>
