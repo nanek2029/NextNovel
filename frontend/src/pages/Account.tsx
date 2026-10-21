@@ -1,4 +1,4 @@
-import { Avatar, Button, FileButton, Flex, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { Avatar, Button, FileButton, Flex, Stack, TextInput, Title } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +11,6 @@ export default function Account() {
     // State for actual user information loaded from backend
     const [username, setUsername] = useState('Loading...');
     const [email, setEmail] = useState('Loading...');
-    const password = 'password123'; // Masked or placeholder representation
 
     // Fetch actual user account data on mount
     useEffect(() => {
@@ -155,25 +154,6 @@ export default function Account() {
                             }}
                         />
 
-                        <PasswordInput
-                            c="#3A5B22"
-                            label="Password"
-                            value={password}
-                            readOnly
-                            styles={{
-                                input: {
-                                    backgroundColor: 'transparent',
-                                    borderColor: 'transparent',
-                                    paddingLeft: 0,
-                                    paddingRight: 0,
-                                    color: '#637a4e'
-                                },
-                                label: {
-                                    fontWeight: '500',
-                                    fontSize: 'var(--mantine-font-size-md)',
-                                },
-                            }}
-                        />
                     </Stack>
                 </Flex>
 

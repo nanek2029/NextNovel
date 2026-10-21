@@ -39,7 +39,7 @@ export default function Search() {
 
         setLoading(true);
         try {
-            const response = await fetch(`/api/books?q=${encodeURIComponent(query)}&type=${type}`);
+            const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}&type=${type}`);
             const data = await response.json();
             if (response.ok) {
                 setBooks(data.books || []);
