@@ -8,34 +8,61 @@ import {
     Title,
 } from '@mantine/core';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ResetCode() {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    const [code, setCode] = useState('');
+    const email = location.state?.email || '';
+
+    const [token, setToken] = useState('');
     const [error, setError] = useState('');
 
-    const handleVerifyCode = () => {
-        if (!code.trim()) {
-            setError('Please enter the verification code.');
-            return;
-        }
-
-        if (!/^\d{6}$/.test(code)) {
-            setError('Please enter a 6-digit verification code.');
+    const handleContinue = () => {
+        if (!token.trim()) {
+            setError('Please enter your reset token.');
             return;
         }
 
         setError('');
 
-        // backend request to verify the code
-        navigate('/reset-password');
+        navigate('/reset-password', {
+            state: { token: token.trim() },
+        });
+    };
+
+    const handleResendToken = async () => {
+        if (!email) {
+            navigate('/forgotpassword');
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                'http://localhost:5000/api/auth/forgot-password',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.message || 'Unable to resend reset token.');
+            }
+        } catch {
+            setError('Unable to connect to the server.');
+        }
     };
 
     return (
         <Flex
-            bg="#FFFEF6"
+            bg="#FFFFE6"
             justify="center"
             align="center"
             style={{
@@ -50,36 +77,33 @@ export default function ResetCode() {
                     </Title>
 
                     <Text c="#637A4E">
-                        Enter the verification code we sent to your email address.
+                        Enter the password reset token we sent to your email address.
                     </Text>
 
                     <TextInput
-                        label="Verification Code"
-                        placeholder="Enter your code..."
-                        value={code}
-                        onChange={(event) => setCode(event.currentTarget.value)}
+                        label="Reset Token"
+                        placeholder="Paste your reset token..."
+                        value={token}
+                        onChange={(event) => setToken(event.currentTarget.value)}
                         error={error}
                         c="#3A5B22"
-                        maxLength={6}
                     />
 
                     <Button
                         color="#3A5B22"
-                        c="#FFFEF6"
+                        c="#FFFFE6"
                         size="md"
-                        onClick={handleVerifyCode}
+                        onClick={handleContinue}
                     >
-                        Verify code
+                        Continue
                     </Button>
 
                     <Button
                         variant="subtle"
                         color="#3A5B22"
-                        onClick={() => {
-                            // backend logic for resending code
-                        }}
+                        onClick={handleResendToken}
                     >
-                        Resend code
+                        Resend token
                     </Button>
 
                     <Button

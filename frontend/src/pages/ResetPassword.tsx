@@ -8,10 +8,13 @@ import {
     Title,
 } from '@mantine/core';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ResetPassword() {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const token = location.state?.token || '';
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,7 +22,7 @@ export default function ResetPassword() {
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
-    const handleResetPassword = () => {
+    const handleResetPassword = async () => {
         let hasError = false;
 
         setPasswordError('');
@@ -49,13 +52,42 @@ export default function ResetPassword() {
             return;
         }
 
-        // Backend request to reset/update password and update database goes here
-        navigate('/login');
+        if (!token) {
+            setPasswordError('Reset token is missing.');
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                'http://localhost:5000/api/auth/reset-password',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        token,
+                        newPassword: password,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setPasswordError(data.message || 'Unable to reset password.');
+                return;
+            }
+
+            navigate('/login');
+        } catch {
+            setPasswordError('Unable to connect to the server.');
+        }
     };
 
     return (
         <Flex
-            bg="#FFFEF6"
+            bg="#FFFFE6"
             justify="center"
             align="center"
             style={{
@@ -93,7 +125,7 @@ export default function ResetPassword() {
 
                     <Button
                         color="#3A5B22"
-                        c="#FFFEF6"
+                        c="#FFFFE6"
                         size="md"
                         onClick={handleResetPassword}
                     >
@@ -105,7 +137,7 @@ export default function ResetPassword() {
                         color="#3A5B22"
                         onClick={() => navigate('/reset-code')}
                     >
-                        Back to verification code
+                        Back to reset token
                     </Button>
                 </Stack>
             </Container>

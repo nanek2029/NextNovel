@@ -16,7 +16,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!email.trim()) {
       setError('Please enter your email address.');
       return;
@@ -29,13 +29,36 @@ export default function ForgotPassword() {
 
     setError('');
 
-    // Backend request to send verification code will go here later.
-    navigate('/reset-code');
+    try {
+      const response = await fetch(
+        'http://localhost:5000/api/auth/forgot-password',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Unable to send password reset email.');
+        return;
+      }
+
+      navigate('/reset-code', {
+        state: { email },
+      });
+    } catch {
+      setError('Unable to connect to the server.');
+    }
   };
 
   return (
     <Flex
-      bg="#FFFEF6"
+      bg="#FFFFE6"
       justify="center"
       align="center"
       style={{
@@ -51,7 +74,7 @@ export default function ForgotPassword() {
 
           <Text c="#637A4E">
             Enter the email associated with your account and we'll send you a
-            verification code.
+            password reset token.
           </Text>
 
           <TextInput
@@ -65,11 +88,11 @@ export default function ForgotPassword() {
 
           <Button
             color="#3A5B22"
-            c="#FFFEF6"
+            c="#FFFFE6"
             size="md"
             onClick={handleSendCode}
           >
-            Send verification code
+            Send reset token
           </Button>
 
           <Button
