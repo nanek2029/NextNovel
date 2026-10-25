@@ -30,7 +30,7 @@ export default function Bookshelf() {
 
     return (
         <Flex
-            bg="#FFFEF6"
+            bg="#FFFFE6"
             justify="center"
             style={{
                 width: '100%',
@@ -95,12 +95,32 @@ export default function Bookshelf() {
                                 book={book}
                                 mode="bookshelf"
                                 status={book.status}
-                                onStatusChange={(status) => {
-                                    setBooks((previous) =>
-                                        previous.map((item) =>
-                                            item.id === book.id ? { ...item, status } : item
-                                        )
-                                    );
+                                onStatusChange={async (status) => {
+                                    try {
+                                        const response = await fetch(
+                                            `/api/books/saved/${book.id}/status`,
+                                            {
+                                                method: 'PATCH',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                credentials: 'include',
+                                                body: JSON.stringify({ status }),
+                                            }
+                                        );
+
+                                        if (!response.ok) {
+                                            return;
+                                        }
+
+                                        setBooks((previous) =>
+                                            previous.map((item) =>
+                                                item.id === book.id ? { ...item, status } : item
+                                            )
+                                        );
+                                    } catch {
+                                        return;
+                                    }
                                 }}
                                 onRemove={() => {
                                     setBooks((previous) =>
