@@ -52,7 +52,7 @@ export default function Signup() {
             }
 
             // redirect to email verification page on success
-            navigate('/verify');
+            navigate('/verifyemail');
         } catch (err: any) {
             setError(err.message);
         } finally {
