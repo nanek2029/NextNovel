@@ -40,7 +40,7 @@ export default function ResetCode() {
 
         try {
             const response = await fetch(
-                'http://localhost:5000/api/auth/forgot-password',
+                '/api/auth/forgot-password',
                 {
                     method: 'POST',
                     headers: {
