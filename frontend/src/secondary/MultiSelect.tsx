@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Checkbox, Combobox, Group, Input, Pill, PillsInput, useCombobox } from '@mantine/core';
 
 // inspired by mantine's multi select component, but with checkboxes and pills for selected values
+// https://mantine.dev/combobox/?e=MultiSelectCheckbox
 
 interface MultiSelectProps {
   optionsList: string[];
