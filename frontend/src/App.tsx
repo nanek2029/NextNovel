@@ -15,6 +15,7 @@ import Account from './pages/Account';
 import ResetCode from './pages/ResetCode';
 import ResetPassword from './pages/ResetPassword';
 import Search from './pages/Search';
+import Questionnaire from './pages/Questionnaire';
 
 export default function App() {
   
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/reset-code" element={<ResetCode />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/questionnaire" element={<Questionnaire />} />
         </Routes>
       </BrowserRouter>
     </MantineProvider>
