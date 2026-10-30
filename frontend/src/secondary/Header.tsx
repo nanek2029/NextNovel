@@ -16,13 +16,15 @@ const links = [
       { link: '/recommendation', label: 'Find Similar Book' }
     ]
   },
-  { link: '/account', label: 'My Account' }
+  { link: '/account', label: 'My Account' }, 
+  {link: '/admin-dashboard', label: 'Admin Dashboard', admin: true}
 ];
 
 export default function Header() {
   const [opened, { toggle, close }] = useDisclosure(false);
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Check login status on mount and when location changes
   useEffect(() => {
@@ -31,8 +33,11 @@ export default function Header() {
         const response = await fetch('/api/auth/account');
         if (response.ok) {
           setIsLoggedIn(true);
+          // setIsAdmin(response.role === 'admin'); // checking for user role . disabled bc user doesnt have role yet
+          setIsAdmin(true); // placeholder 
         } else {
           setIsLoggedIn(false);
+          setIsAdmin(false);
         }
       } catch (error) {
         setIsLoggedIn(false);
@@ -47,8 +52,14 @@ export default function Header() {
     if (isLoggedIn && (link.link === '/login' || link.link === '/signup')) {
       return false; // hide Log In and Register when logged in
     }
-    if (!isLoggedIn && link.link === '/account') {
-      return false; // hide My Account when logged out
+    if (!isLoggedIn && (link.link === '/account' || link.link === '/bookshelf' || link.label === 'Find Your NextNovel')) {
+      return false; // hide My Account, bookshelf, and recommendation when logged out
+    }
+    if (isAdmin && isLoggedIn && (link.link === '/bookshelf' ||  link.label === 'Find Your NextNovel')){
+      return false; // admin doesn't have bookshelf 
+    }
+    if (link.admin && !isAdmin){// only show admin dashboard to admins 
+      return false;
     }
     return true;
   });
