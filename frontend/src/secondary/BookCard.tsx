@@ -30,9 +30,10 @@ type BookCardProps = {
     onStatusChange?: (status: BookStatus) => void;
     onRemove?: () => void;
     onAdd?: () => void;
+    loggedIn?: boolean;
 };
 
-export default function BookCard({ book, mode, status = 'want to read', onStatusChange, onRemove,onAdd,
+export default function BookCard({ book, mode, status = 'want to read', onStatusChange, onRemove,onAdd, loggedIn=true
 }: BookCardProps) {
 
     const statuses: BookStatus[] = [
@@ -174,7 +175,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
             )}
 
             {/* If a bookcard is in recommendation mode you will only have the option to add it */}
-            {mode === 'recommendation' && (
+            {mode === 'recommendation' && loggedIn && (
                 <ActionIcon
                     variant={added ? 'filled' : 'outline'}
                     color="#689f41"

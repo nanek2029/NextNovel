@@ -38,7 +38,7 @@ export default function Questionnaire() {
 
             {/* content of page */}
             <Flex direction="column" align="center" justify="center" style={{ flex: 1, height: '100%', padding: '2rem' }}>
-                <Title c="#3A5B22" mb="xl" order={1}>Find your dream book</Title>
+                <Title c="#3A5B22" mb="xl" order={1}>Describe your dream book</Title>
 
                 {/* form card */}
                 <Flex bg="#FFFFFF" align="center" direction="column" gap="lg" style={{ border: '1px solid #d1dfce', borderRadius: 'var(--mantine-radius-lg)', padding: '3rem', width: '85%', flexWrap: 'wrap' }}>

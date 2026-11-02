@@ -15,6 +15,25 @@ export default function Search() {
     const [historyOpened, setHistoryOpened] = useState(false);
     const [books, setBooks] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Check login status on mount and when location changes
+    useEffect(() => {
+        const checkAuthStatus = async () => {
+        try {
+            const response = await fetch('/api/auth/account');
+            if (response.ok) {
+            setIsLoggedIn(true);
+            } else {
+            setIsLoggedIn(false);
+            }
+        } catch (error) {
+            setIsLoggedIn(false);
+        }
+        };
+
+        checkAuthStatus();
+    }, [location]);
 
     // close history window if clicking outside 
     useEffect(() => {
@@ -116,6 +135,20 @@ export default function Search() {
                 <div className="search-container" style={{ position: 'relative', width: 'calc(100vw - 400px)', flexShrink: 0 }}>
                     <Autocomplete
                         value={search}
+                        styles={{
+                            input: {
+                                border: '1px solid #a2c08d',
+                                '&:focus-within': {
+                                    borderColor: '#3A5B22',
+                                
+                                },
+                                color: '#3A5B22'
+                            },
+                            label:{
+                                color: '#3A5B22',
+                                fontSize: "18px"
+                            }
+                        }}
                         onChange={setSearch}
                         onFocus={() => {
                             if (searchHistory.length > 0) {
@@ -246,6 +279,7 @@ export default function Search() {
                                     key={book.id}
                                     book={book}
                                     mode="recommendation"
+                                    loggedIn={false}
                                     onAdd={() => {
                                         // Later: add book to bookshelf
                                     }}
