@@ -68,11 +68,13 @@ const searchBooks = async (req, res) => {
             return {
                 id: item.id,
                 title: info.title || 'Unknown title',
-                authors: info.authors || [],
-                description: info.description || '',
+                author: info.authors?.join(', ') || '',
+                genre: info.categories?.join(', ') || '',
+                year: info.publishedDate
+                    ? Number(info.publishedDate.substring(0, 4))
+                    : 0,
                 thumbnail: info.imageLinks?.thumbnail || '',
-                pageCount: info.pageCount || null,
-                categories: info.categories || []
+                length: info.pageCount || 0,
             };
         });
 
