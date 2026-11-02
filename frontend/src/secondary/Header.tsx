@@ -34,7 +34,7 @@ export default function Header() {
         if (response.ok) {
           setIsLoggedIn(true);
           // setIsAdmin(response.role === 'admin'); // checking for user role . disabled bc user doesnt have role yet
-          setIsAdmin(true); // placeholder 
+          setIsAdmin(false); // placeholder 
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
