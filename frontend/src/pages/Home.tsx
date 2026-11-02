@@ -81,6 +81,8 @@ export default function Home() {
               Login
             </Button>
 
+          
+          {/* Disabling these to avoid conflict when user is not logged in. 
             <Button
               className="get-started-button"
               color="#3A5B22"
@@ -100,6 +102,7 @@ export default function Home() {
             >
               Find Your Next Novel
             </Button>
+          */}
 
           </Flex>
         </Flex>

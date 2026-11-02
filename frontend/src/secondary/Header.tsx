@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Burger, Container, Divider, Drawer, Group, ScrollArea } from '@mantine/core';
+import { Burger, Container, Divider, Drawer, Group, ScrollArea, Menu, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './Header.module.scss';
-import { MagnifyingGlassIcon } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon, CaretDown } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 
 const links = [
@@ -10,9 +10,13 @@ const links = [
   { link: '/login', label: 'Log In' },
   { link: '/signup', label: 'Register' },
   { link: '/bookshelf', label: 'Bookshelf'},
-  { link: '/recommendation', label: 'Find Your NextNovel'},
-  { link: '/account', label: 'My Account'},
-  
+  { label: 'Find Your NextNovel', 
+    subItems: [
+      { link: '/questionnaire', label: 'Questionnaire' },
+      { link: '/recommendation', label: 'Find Similar Book' }
+    ]
+  },
+  { link: '/account', label: 'My Account' }
 ];
 
 export default function Header() {
@@ -49,9 +53,42 @@ export default function Header() {
     return true;
   });
 
-  const items = filteredLinks.map((link) => (
+  const items = filteredLinks.map((link) => {
 
-    <Link
+    // drop down when clicking recommendation to choose between ai and questionaire
+    if (link.subItems) {
+      const isSubActive = link.subItems.some((sub) => location.pathname === sub.link);
+
+      return (
+        <Menu key={link.label} trigger="hover" openDelay={100} closeDelay={150} withinPortal>
+          <Menu.Target>
+            <UnstyledButton
+              className={classes.link}
+              data-active={isSubActive || undefined}
+              style={{display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <span>{link.label}</span>
+              <CaretDown size={14} weight="bold" />
+            </UnstyledButton>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {link.subItems.map((sub) => (
+              <Menu.Item
+                key={sub.label}
+                component={Link}
+                to={sub.link}
+                className={classes.link}
+                data-active={location.pathname === sub.link || undefined}
+              >
+                {sub.label}
+              </Menu.Item>
+            ))}
+          </Menu.Dropdown>
+        </Menu>
+      );
+    }
+
+    return <Link
       key={link.label}
       to={link.link}
       className={classes.link}
@@ -60,30 +97,30 @@ export default function Header() {
     >
       {link.label}
     </Link>
-  ));
+});
 
   return (
     <header className={classes.header}>
-      <Container fluid p={13} size="md" className={classes.inner}>
+      <Container fluid p={13} size="lg" className={classes.inner} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
 
         <Group gap="md">
           <Link to="/">
             <img width={30} src="/nextnovel_fav.png" alt="Logo" />
           </Link>
 
-          <Link to="/search" className={classes.searchLink}>
+          <Link to="/search" className={classes.searchLink} style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <MagnifyingGlassIcon size={20} weight="bold" />
-            <span>Search a book title...</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Search a book title...</span>
           </Link>
         </Group>
         
         
-        <Group gap={5} visibleFrom="xs">
+        <Group gap={5} visibleFrom="sm">
           {items}
         </Group>
-        <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" aria-label="Toggle navigation" />
+        <Burger opened={opened} onClick={toggle} color="#80AA62" size="sm" aria-label="Toggle navigation" hiddenFrom="sm" />
       </Container>
-      <Drawer opened={opened} onClose={close} size="100%" padding="md" title="Navigation" hiddenFrom="xs" zIndex={1000000}>
+      <Drawer opened={opened} onClose={close} size="100%" padding="md" title="Navigation" hiddenFrom="sm" zIndex={1000000}>
         <ScrollArea h="calc(100vh - 80px)">
           <Divider my="sm" />
           {items}
