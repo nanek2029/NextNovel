@@ -30,7 +30,7 @@ export default function Bookshelf() {
 
     return (
         <Flex
-            bg="#FFFFE6"
+            bg="#FFFEF6"
             justify="center"
             style={{
                 width: '100%',

@@ -279,7 +279,7 @@ export default function Search() {
                                     key={book.id}
                                     book={book}
                                     mode="recommendation"
-                                    loggedIn={false}
+                                    loggedIn={isLoggedIn}
                                     onAdd={() => {
                                         // Later: add book to bookshelf
                                     }}
