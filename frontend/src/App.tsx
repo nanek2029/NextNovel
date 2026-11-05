@@ -17,6 +17,7 @@ import ResetPassword from './pages/ResetPassword';
 import Search from './pages/Search';
 import Questionnaire from './pages/Questionnaire';
 import AdminDashboard from './pages/AdminDashboard';
+import CheckStatus from './secondary/checkStatus'; 
 
 export default function App() {
   
@@ -31,14 +32,39 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgotpassword" element={<ForgotPassword/>}/>
           <Route path="/verifyemail" element={<VerifyEmail/>}/>
-          <Route path="/bookshelf" element={<Bookshelf />}/>
-          <Route path="/recommendation" element={<Recommendation/>}/>
-          <Route path="/account" element={<Account/>}/>
           <Route path="/reset-code" element={<ResetCode />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/questionnaire" element={<Questionnaire />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
+          // routes that need to be protected 
+          <Route path="/bookshelf" element={
+            <CheckStatus>
+              <Bookshelf />
+            </CheckStatus>} />
+
+          <Route path="/recommendation" element={
+            <CheckStatus>
+              <Recommendation />
+            </CheckStatus>} />
+          <Route path="/account" element={
+            <CheckStatus>
+              <Account />
+            </CheckStatus>} />
+
+          <Route path="/search" element={
+            <CheckStatus>
+              <Search />
+            </CheckStatus>} />
+
+          <Route path="/questionnaire" element={
+            <CheckStatus>
+              <Questionnaire />
+            </CheckStatus>} />
+
+          <Route path="/admin-dashboard" element={
+            <CheckStatus adminOnly={true}>
+              <AdminDashboard />
+            </CheckStatus>} />
+            
         </Routes>
       </BrowserRouter>
     </MantineProvider>

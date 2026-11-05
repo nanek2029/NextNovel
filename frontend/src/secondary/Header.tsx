@@ -31,10 +31,10 @@ export default function Header() {
     const checkAuthStatus = async () => {
       try {
         const response = await fetch('/api/auth/account');
+        const data = await response.json();
         if (response.ok) {
           setIsLoggedIn(true);
-          // setIsAdmin(response.role === 'admin'); // checking for user role . disabled bc user doesnt have role yet
-          setIsAdmin(false); // placeholder 
+          setIsAdmin(data.user.role === 'admin'); // checking for user role
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
