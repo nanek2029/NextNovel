@@ -16,7 +16,6 @@ const genres = [
 ];
 
 export default function Questionnaire() {
-    const navigate = useNavigate();
 
     // variables for page count and operator for number range
     const [operator, setOperator] = useState<string>('>');
@@ -27,10 +26,62 @@ export default function Questionnaire() {
     const [numberValue2, setNumberValue2] = useState<number | string>('');
 
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const handleSubmit = () => {
-        console.log("Submitted genres:", selectedGenres);
-        // Send data to backend or use it for recommendations
+    const handleSubmit = async () => {
+        setErrorMessage(null);
+
+        // must pick at least one genre 
+        if (selectedGenres.length === 0) {
+            setErrorMessage('Please select at least one genre.');
+            return;
+        }
+
+        // must pick page count and operator
+        if (numberValue === '' || numberValue === null || numberValue === undefined) {
+            setErrorMessage('Please select a page count.');
+            return;
+        }
+
+        if (operator === '') {
+            setErrorMessage('Please select greater/less than for page count.');
+            return;
+        }
+
+        // must pick year and year operator
+        if (numberValue2 === '' || numberValue2 === null || numberValue2 === undefined) {
+            setErrorMessage('Please select a publication year.');
+            return;
+        }
+
+        if (operator2 === '') {
+            setErrorMessage('Please select before/after for publication year.');
+            return;
+        }
+
+        // assemble query
+        const answers: {
+            genres: string[];
+            pageCount?: { operator: string; value: number | string };
+            publicationYear?: { operator: string; value: number | string };
+        } = {
+            genres: selectedGenres,
+            pageCount : { operator: operator, value: numberValue },
+            publicationYear : { operator: operator2, value: numberValue2 }
+        };
+
+        // api call 
+        try {
+            const response = await fetch(`/api/books/recommendations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(answers)
+            });
+        } catch (error) {
+            console.error("Error submitting questionnaire:", error);
+        }
     };
 
     return (
@@ -42,6 +93,13 @@ export default function Questionnaire() {
 
                 {/* form card */}
                 <Flex bg="#FFFFFF" align="center" direction="column" gap="lg" style={{ border: '1px solid #d1dfce', borderRadius: 'var(--mantine-radius-lg)', padding: '3rem', width: '85%', flexWrap: 'wrap' }}>
+
+                    {/* error message display*/}
+                    {errorMessage && (
+                        <Text c="red" size="sm" fw={500}>
+                            {errorMessage}
+                        </Text>
+                    )}
 
                     <Flex direction="row" gap="md" style={{ flex: 1, minWidth: 0 }}>
                         
