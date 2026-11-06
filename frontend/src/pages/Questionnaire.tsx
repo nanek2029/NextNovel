@@ -1,12 +1,12 @@
-import { Flex, Title, Text, Button } from '@mantine/core';
-import { useNavigate } from 'react-router-dom';
+import { Flex, Title, Text, Button, SimpleGrid } from '@mantine/core';
 import MultiSelect from '../secondary/MultiSelect';
 import NumberRange from '../secondary/NumberRange';
+import BookCard, { type Book } from '../secondary/BookCard';
 import { useState } from 'react';
 
 // This file contains the questionnaire page where users can fill out their preferences to get a recommendation
 
-// REPLACE LATER WITH THOSE IN GOOGLE BOOKS API DATABASE 
+// REPLACE LATER WITH THOSE IN GOOGLE BOOKS API DATABASE
 const genres = [
     'Fantasy',
     'Science Fiction',
@@ -18,20 +18,21 @@ const genres = [
 export default function Questionnaire() {
 
     // variables for page count and operator for number range
-    const [operator, setOperator] = useState<string>('>');
+    const [operator, setOperator] = useState<string>('');
     const [numberValue, setNumberValue] = useState<number | string>('');
 
-    // variables for  year range
-    const [operator2, setOperator2] = useState<string>('>');
+    // variables for year range
+    const [operator2, setOperator2] = useState<string>('');
     const [numberValue2, setNumberValue2] = useState<number | string>('');
 
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
 
     const handleSubmit = async () => {
         setErrorMessage(null);
 
-        // must pick at least one genre 
+        // must pick at least one genre
         if (selectedGenres.length === 0) {
             setErrorMessage('Please select at least one genre.');
             return;
@@ -66,26 +67,39 @@ export default function Questionnaire() {
             publicationYear?: { operator: string; value: number | string };
         } = {
             genres: selectedGenres,
-            pageCount : { operator: operator, value: numberValue },
-            publicationYear : { operator: operator2, value: numberValue2 }
+            pageCount: { operator: operator, value: numberValue },
+            publicationYear: { operator: operator2, value: numberValue2 }
         };
 
-        // api call 
+        // api call
         try {
-            const response = await fetch(`/api/books/recommendations`, {
+            const response = await fetch('/api/books/recommendations', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(answers)
             });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setErrorMessage(data.message || 'Unable to get recommendations.');
+                return;
+            }
+
+            setRecommendedBooks(data.books || []);
         } catch (error) {
             console.error("Error submitting questionnaire:", error);
         }
     };
 
     return (
-        <Flex bg="#FFFEF6" direction="row" style={{ width: '100%', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
+        <Flex
+            bg="#FFFEF6"
+            direction="row"
+            style={{ width: '100%', minHeight: 'calc(100vh - 56px)', overflowY: 'auto' }}
+        >
 
             {/* content of page */}
             <Flex direction="column" align="center" justify="center" style={{ flex: 1, height: '100%', padding: '2rem' }}>
@@ -94,7 +108,7 @@ export default function Questionnaire() {
                 {/* form card */}
                 <Flex bg="#FFFFFF" align="center" direction="column" gap="lg" style={{ border: '1px solid #d1dfce', borderRadius: 'var(--mantine-radius-lg)', padding: '3rem', width: '85%', flexWrap: 'wrap' }}>
 
-                    {/* error message display*/}
+                    {/* error message display */}
                     {errorMessage && (
                         <Text c="red" size="sm" fw={500}>
                             {errorMessage}
@@ -102,7 +116,7 @@ export default function Questionnaire() {
                     )}
 
                     <Flex direction="row" gap="md" style={{ flex: 1, minWidth: 0 }}>
-                        
+
                         {/* genre selection */}
                         <Flex direction="column" gap="sm" style={{ flex: 1, minWidth: 0 }}>
                             <Text c="#637a4e" fw={500} size="md">1. What genres would you prefer to read?</Text>
@@ -123,12 +137,29 @@ export default function Questionnaire() {
 
                     </Flex>
 
-                    <Button mt="lg" onClick={handleSubmit}  color="#3A5B22" mb={0} style={{height: "50px", width: '40%', fontSize: 'var(--mantine-font-size-lg'}} >Find my NextNovel</Button>
+                    <Button mt="lg" onClick={handleSubmit} color="#3A5B22" mb={0} style={{ height: '50px', width: '40%', fontSize: 'var(--mantine-font-size-lg)' }}>
+                        Find my NextNovel
+                    </Button>
 
                 </Flex>
 
-            </Flex>
+                {recommendedBooks.length > 0 && (
+                    <Flex direction="column" w="85%" mt="xl" gap="md">
+                        <Title c="#3A5B22" order={2}>Your Recommendations</Title>
 
+                        <SimpleGrid cols={2} spacing="md">
+                            {recommendedBooks.map((book) => (
+                                <BookCard
+                                    key={book.id}
+                                    book={book}
+                                    mode="recommendation"
+                                />
+                            ))}
+                        </SimpleGrid>
+                    </Flex>
+                )}
+
+            </Flex>
 
         </Flex>
     );
