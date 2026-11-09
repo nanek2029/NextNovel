@@ -14,7 +14,9 @@ export default function Recommendation() {
     const [search, setSearch] = useState('');
     const [books, setBooks] = useState<Book[]>([]);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+    const [message, setMessage] = useState('');
 
+    // Search Google Books
     const fetchBooks = async () => {
         if (!search.trim()) {
             return;
@@ -28,10 +30,41 @@ export default function Recommendation() {
             const data = await response.json();
 
             if (response.ok) {
-                setBooks(data.books || []);
+                setBooks((data.books || []).slice(0, 10));
             }
         } catch (error) {
             console.error('Book search failed:', error);
+        }
+    };
+
+    // Send selected book to similar-book backend endpoint
+    const findSimilarBooks = async () => {
+        if (!selectedBook) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/books/similar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    book: selectedBook
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log(data.books);
+                setMessage(`${data.books?.length || 0} similar books found.`);
+            } else {
+                setMessage(data.message || 'Unable to find similar books.');
+            }
+        } catch (error) {
+            console.error('Similar book request failed:', error);
+            setMessage('Unable to find similar books.');
         }
     };
 
@@ -98,6 +131,20 @@ export default function Recommendation() {
                     <Text>
                         {selectedBook.title} by {selectedBook.author}
                     </Text>
+
+                    <Button
+                        color="#3A5B22"
+                        mt="sm"
+                        onClick={findSimilarBooks}
+                    >
+                        Find Similar Books
+                    </Button>
+
+                    {message && (
+                        <Text mt="sm" c="#637a4e">
+                            {message}
+                        </Text>
+                    )}
                 </Flex>
             )}
 
@@ -113,7 +160,10 @@ export default function Recommendation() {
                             key={book.id}
                             book={book}
                             mode="similar"
-                            onSelect={() => setSelectedBook(book)}
+                            onSelect={() => {
+                                setSelectedBook(book);
+                                setMessage('');
+                            }}
                         />
                     ))}
                 </SimpleGrid>
