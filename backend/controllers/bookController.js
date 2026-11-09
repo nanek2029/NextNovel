@@ -1,8 +1,231 @@
 // Omar - NextNovel
-// Jira Tasks: PBI #10, PBI #12, and PBI #14
-// Handles book search, questionnaire recommendations, and saved-book reading status updates.
+// Jira Tasks: PBI #10, PBI #12, PBI #14, and PBI #18
+// Handles book search, questionnaire recommendations,
+// AI similar-book recommendations, and saved-book reading status updates.
 
 const User = require('../models/user');
+
+// Number of verified similar books returned to the frontend
+const SIMILAR_BOOK_LIMIT = 6;
+
+// Ask Gemini for extra suggestions since some may not verify in Google Books
+const GEMINI_CANDIDATE_LIMIT = 10;
+
+// Validate the book selected for similar-book recommendations
+const validateSelectedBook = (book) => {
+    if (!book || typeof book !== 'object' || Array.isArray(book)) {
+        throw new Error('A selected book is required');
+    }
+    const title = typeof book.title === 'string' ? book.title.trim() : '';
+    const author = typeof book.author === 'string' ? book.author.trim() : '';
+    const genre = typeof book.genre === 'string' ? book.genre.trim() : '';
+    const year = Number(book.year) || 0;
+    if (!title) {
+        throw new Error('The selected book must have a title')
+    }
+    if (!author) {
+        throw new Error('The selected book must have an author')
+    }
+    return {title, author, genre, year};
+};
+
+// Ask Gemini for real book candidates similar to the selected book
+const getGeminiBookCandidates = async (selectedBook) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+
+    if (!apiKey) {
+        throw new Error('Gemini API key is not configured.');
+    }
+
+    const prompt = `Recommend ${GEMINI_CANDIDATE_LIMIT} real, published books that are similar to this book:
+
+Title: ${selectedBook.title}
+Author: ${selectedBook.author}
+Genre: ${selectedBook.genre || 'Unknown'}
+Year: ${selectedBook.year || 'Unknown'}
+
+Requirements:
+- Recommend only real, published books.
+- Do not recommend the selected book itself.
+- Choose books that are similar in genre, themes, tone, setting, or audience.
+- Return a short one-sentence explanation of why each recommendation is similar.
+- Provide the correct title and author for every recommendation.
+`;
+
+    const url =
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        {
+                            text: prompt
+                        }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.3,
+                responseMimeType: 'application/json',
+                responseJsonSchema: {
+                    type: 'object',
+                    properties: {
+                        books: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    title: {
+                                        type: 'string'
+                                    },
+                                    author: {
+                                        type: 'string'
+                                    },
+                                    reason: {
+                                        type: 'string'
+                                    }
+                                },
+                                required: [
+                                    'title',
+                                    'author',
+                                    'reason'
+                                ]
+                            }
+                        }
+                    },
+                    required: ['books']
+                }
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+
+        console.error(
+            'Gemini API error:',
+            response.status,
+            errorText
+        );
+
+        throw new Error(
+            `Gemini API request failed with status ${response.status}.`
+        );
+    }
+
+    const data = await response.json();
+
+    const responseText = data.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || '')
+        .join('');
+
+    if (!responseText) {
+        throw new Error('Gemini returned an empty response.');
+    }
+
+    let parsedResponse;
+
+    try {
+        parsedResponse = JSON.parse(responseText);
+    } catch {
+        throw new Error('Gemini returned invalid JSON.');
+    }
+
+    if (!Array.isArray(parsedResponse.books)) {
+        throw new Error('Gemini response did not contain a book list.');
+    }
+
+    return parsedResponse.books
+        .filter(book =>
+            typeof book.title === 'string' &&
+            book.title.trim() &&
+            typeof book.author === 'string' &&
+            book.author.trim() &&
+            typeof book.reason === 'string' &&
+            book.reason.trim()
+        )
+        .map(book => ({
+            title: book.title.trim(),
+            author: book.author.trim(),
+            reason: book.reason.trim()
+        }))
+        .slice(0, GEMINI_CANDIDATE_LIMIT);
+};
+
+// Verify a Gemini recommendation using Google Books
+const verifyBookWithGoogle = async (candidate) => {
+    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('Google Books API key is not configured.');
+    }
+
+    const searchQuery = `intitle:${candidate.title} inauthor:${candidate.author}`;
+
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=5&key=${apiKey}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        console.error(
+            'Google Books verification error:',
+            response.status,
+            response.statusText
+        );
+        return null;
+    }
+
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+        return null;
+    }
+
+    const normalizedTitle = candidate.title.toLowerCase().trim();
+
+    const normalizedAuthor = candidate.author.toLowerCase().trim();
+
+    const matchingItem = data.items.find((item) => {
+        const info = item.volumeInfo || {};
+
+        const googleTitle = (info.title || '').toLowerCase().trim();
+
+        const googleAuthors =
+            (info.authors || [])
+                .join(' ')
+                .toLowerCase();
+
+        return (googleTitle === normalizedTitle && googleAuthors.includes(normalizedAuthor));
+    });
+
+    if (!matchingItem) {
+        return null;
+    }
+
+    const info = matchingItem.volumeInfo || {};
+
+    return {
+        id: matchingItem.id,
+        title: info.title || candidate.title,
+        author: info.authors?.join(', ') || candidate.author,
+        genre: info.categories?.join(', ') || '',
+        year: info.publishedDate
+            ? Number(info.publishedDate.substring(0, 4))
+            : 0,
+        thumbnail: info.imageLinks?.thumbnail || '',
+        length: info.pageCount || 0,
+        reason: candidate.reason
+    };
+};
 
 // Genres currently supported by the questionnaire
 const QUESTIONNAIRE_GENRES =
@@ -266,6 +489,79 @@ const getQuestionnaireRecommendations = async (req, res) => {
     }
 };
 
+// Get AI-powered similar-book recommendations
+const getSimilarBooks = async (req, res) => {
+    try {
+        let selectedBook;
+
+        // Validate the book sent from the frontend
+        try {
+            selectedBook = validateSelectedBook(req.body?.book);
+        } catch (error) {
+            return res.status(400).json({
+                message: error.message
+            });
+        }
+
+        // Ask Gemini for candidate recommendations
+        const candidates = await getGeminiBookCandidates(selectedBook);
+
+        const verifiedBooks = [];
+        const seenBookIds = new Set();
+
+        const selectedTitle = selectedBook.title.toLowerCase().trim();
+
+        const selectedAuthor = selectedBook.author.toLowerCase().trim();
+
+        // Verify Gemini's suggestions through Google Books
+        for (const candidate of candidates) {
+            // Stop once we have enough verified books
+            if (verifiedBooks.length >= SIMILAR_BOOK_LIMIT) {
+                break;
+            }
+
+            const verifiedBook = await verifyBookWithGoogle(candidate);
+
+            // Ignore recommendations Google Books could not verify
+            if (!verifiedBook) {
+                continue;
+            }
+
+            const verifiedTitle = verifiedBook.title.toLowerCase().trim();
+
+            const verifiedAuthor = verifiedBook.author.toLowerCase().trim();
+
+            // Do not recommend the book the user already selected
+            const isSelectedBook = verifiedTitle === selectedTitle && verifiedAuthor.includes(selectedAuthor);
+
+            if (isSelectedBook) {
+                continue;
+            }
+
+            // Avoid returning duplicate Google Books volumes
+            if (seenBookIds.has(verifiedBook.id)) {
+                continue;
+            }
+
+            seenBookIds.add(verifiedBook.id);
+            verifiedBooks.push(verifiedBook);
+        }
+
+        return res.status(200).json({
+            books: verifiedBooks
+        });
+
+    } catch (error) {
+        console.error(
+            'Similar-book recommendation failed:', error.message
+        );
+
+        return res.status(502).json({
+            message: 'Failed to generate similar-book recommendations.'
+        });
+    }
+};
+
 // Update the reading status of a saved book
 const updateReadingStatus = async (req, res) => {
     try {
@@ -331,5 +627,6 @@ const updateReadingStatus = async (req, res) => {
 module.exports = {
     searchBooks,
     getQuestionnaireRecommendations,
+    getSimilarBooks,
     updateReadingStatus
 };
