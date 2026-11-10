@@ -38,7 +38,7 @@ export default function Bookshelf() {
                 overflowY: 'auto',
             }}
         >
-            <Flex direction="column" style={{ width: '100%' }} p="md">
+            <Flex direction="column" style={{ width: '100%' }} p="md" >
                 <Title order={2} c="#3A5B22" mb="sm">
                     My Bookshelf
                 </Title>
