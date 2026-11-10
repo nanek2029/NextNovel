@@ -1,5 +1,5 @@
-import { ActionIcon, Flex, Image, Menu, Stack,Text, Group} from '@mantine/core';
-import {CaretDownIcon, PlusIcon, TrashIcon, CheckIcon } from '@phosphor-icons/react';
+import { ActionIcon, Flex, Image, Menu, Stack, Text, Group, Button } from '@mantine/core';
+import { CaretDownIcon, PlusIcon, TrashIcon, CheckIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 // **important ** the size is relative it just has an aspect ratio that it maintains. I was thinkining in the bookhelf it should be smaller. 
@@ -25,15 +25,16 @@ export type Book = {
 // parameters of a bookcard component 
 type BookCardProps = {
     book: Book;
-    mode: 'bookshelf' | 'recommendation';
+    mode: 'bookshelf' | 'recommendation' | 'similar';
     status?: BookStatus;
     onStatusChange?: (status: BookStatus) => void;
     onRemove?: () => void;
     onAdd?: () => void;
+    onSelect?: () => void;
     loggedIn?: boolean;
 };
 
-export default function BookCard({ book, mode, status = 'want to read', onStatusChange, onRemove,onAdd, loggedIn=true
+export default function BookCard({ book, mode, status = 'want to read', onStatusChange, onRemove, onAdd, onSelect, loggedIn = true
 }: BookCardProps) {
 
     const statuses: BookStatus[] = [
@@ -60,9 +61,9 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
 
             {/* Book information */}
             <Stack gap={3} style={{
-                    flex: 1,
-                    minWidth: 0,
-                }}
+                flex: 1,
+                minWidth: 0,
+            }}
             >
                 {/* Book title, author, genre */}
                 <Text c="#3A5B22" fw={500} size="lg" lineClamp={2}>
@@ -77,7 +78,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                         {book.author}
                     </Text>
                 </Group>
-                
+
 
                 <Group gap="xs">
                     <Text c="#87CA00" fw={500} size="sm">
@@ -169,7 +170,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
 
             {/* Trashcan icon */}
             {mode === 'bookshelf' && (
-                <ActionIcon  variant="subtle" color="#3A5B22" radius="sm" size="lg" onClick={onRemove} >
+                <ActionIcon variant="subtle" color="#3A5B22" radius="sm" size="lg" onClick={onRemove} >
                     <TrashIcon size={80} weight="regular" color="#c75f5f" />
                 </ActionIcon>
             )}
@@ -202,6 +203,15 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                         />
                     )}
                 </ActionIcon>
+            )}
+            {mode === 'similar' && (
+                <Button
+                    color="#3A5B22"
+                    variant="light"
+                    onClick={onSelect}
+                >
+                    Use this book
+                </Button>
             )}
         </Flex>
     );
