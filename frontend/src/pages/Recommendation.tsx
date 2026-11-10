@@ -103,11 +103,10 @@ export default function Recommendation() {
                     style={{ flex: 1 }}
                     onKeyDown={(event) => {
                         if (event.key === 'Enter') {
-                            fetchBooks();
+                            void fetchBooks();
                         }
                     }}
                 />
-
                 <Button color="#3A5B22" onClick={fetchBooks}>
                     Search
                 </Button>
@@ -135,7 +134,7 @@ export default function Recommendation() {
                     <Button
                         color="#3A5B22"
                         mt="sm"
-                        onClick={findSimilarBooks}
+                        onClick={() => void findSimilarBooks()}
                     >
                         Find Similar Books
                     </Button>
