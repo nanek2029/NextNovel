@@ -9,7 +9,7 @@ const User = require('../models/user');
 const SIMILAR_BOOK_LIMIT = 6;
 
 // Ask Gemini for extra suggestions since some may not verify in Google Books
-const GEMINI_CANDIDATE_LIMIT = 10;
+const GEMINI_CANDIDATE_LIMIT = 15;
 
 // Validate the book selected for similar-book recommendations
 const validateSelectedBook = (book) => {
@@ -23,10 +23,8 @@ const validateSelectedBook = (book) => {
     if (!title) {
         throw new Error('The selected book must have a title')
     }
-    if (!author) {
-        throw new Error('The selected book must have an author')
-    }
-    return {title, author, genre, year};
+
+    return { title, author, genre, year };
 };
 
 // Ask Gemini for real book candidates similar to the selected book
@@ -41,7 +39,7 @@ const getGeminiBookCandidates = async (selectedBook) => {
     const prompt = `Recommend ${GEMINI_CANDIDATE_LIMIT} real, published books that are similar to this book:
 
 Title: ${selectedBook.title}
-Author: ${selectedBook.author}
+Author: ${selectedBook.author || 'Unknown'}
 Genre: ${selectedBook.genre || 'Unknown'}
 Year: ${selectedBook.year || 'Unknown'}
 
@@ -56,57 +54,72 @@ Requirements:
     const url =
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        {
-                            text: prompt
-                        }
-                    ]
-                }
-            ],
-            generationConfig: {
-                temperature: 0.3,
-                responseMimeType: 'application/json',
-                responseJsonSchema: {
-                    type: 'object',
-                    properties: {
-                        books: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    title: {
-                                        type: 'string'
-                                    },
-                                    author: {
-                                        type: 'string'
-                                    },
-                                    reason: {
-                                        type: 'string'
-                                    }
-                                },
-                                required: [
-                                    'title',
-                                    'author',
-                                    'reason'
-                                ]
+    let response;
+
+    // Retry temporary Gemini 429/503 errors
+    for (let attempt = 0; attempt < 4; attempt++) {
+        response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            {
+                                text: prompt
                             }
-                        }
-                    },
-                    required: ['books']
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.3,
+                    responseMimeType: 'application/json',
+                    responseJsonSchema: {
+                        type: 'object',
+                        properties: {
+                            books: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        title: {
+                                            type: 'string'
+                                        },
+                                        author: {
+                                            type: 'string'
+                                        },
+                                        reason: {
+                                            type: 'string'
+                                        }
+                                    },
+                                    required: [
+                                        'title',
+                                        'author',
+                                        'reason'
+                                    ]
+                                }
+                            }
+                        },
+                        required: ['books']
+                    }
                 }
-            }
-        })
-    });
+            })
+        });
+
+        if (response.status !== 429 && response.status !== 503) {
+            break;
+        }
+
+        if (attempt < 3) {
+            await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * (attempt + 1))
+            );
+        }
+    }
 
     if (!response.ok) {
         const errorText = await response.text();
@@ -255,7 +268,7 @@ const parseQuestionnaireFilter = (filter, fieldName) => {
     if (fieldName === 'publicationYear' && (value < 1000 || value > new Date().getFullYear())) {
         throw new Error('Invalid publication year.');
     }
-    return {operator: filter.operator, value};
+    return { operator: filter.operator, value };
 };
 
 // Search books through Google Books API
@@ -348,7 +361,7 @@ const searchBooks = async (req, res) => {
 // Get book recommendations from questionnaire responses
 const getQuestionnaireRecommendations = async (req, res) => {
     try {
-        const { genres, pageCount, publicationYear} = req.body;
+        const { genres, pageCount, publicationYear } = req.body;
 
         // At least one genre is needed to search Google Books
         if (!Array.isArray(genres) || genres.length === 0) {
@@ -532,7 +545,9 @@ const getSimilarBooks = async (req, res) => {
             const verifiedAuthor = verifiedBook.author.toLowerCase().trim();
 
             // Do not recommend the book the user already selected
-            const isSelectedBook = verifiedTitle === selectedTitle && verifiedAuthor.includes(selectedAuthor);
+            const isSelectedBook =
+                verifiedTitle === selectedTitle &&
+                (!selectedAuthor || verifiedAuthor.includes(selectedAuthor));
 
             if (isSelectedBook) {
                 continue;
