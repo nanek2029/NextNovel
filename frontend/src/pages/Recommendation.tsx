@@ -14,6 +14,7 @@ export default function Recommendation() {
     const [search, setSearch] = useState('');
     const [books, setBooks] = useState<Book[]>([]);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+    const [similarBooks, setSimilarBooks] = useState<Book[]>([]);
     const [message, setMessage] = useState('');
 
     // Search Google Books
@@ -30,7 +31,7 @@ export default function Recommendation() {
             const data = await response.json();
 
             if (response.ok) {
-                setBooks((data.books || []).slice(0, 10));
+                setBooks((data.books || []).slice(0, 8));
             }
         } catch (error) {
             console.error('Book search failed:', error);
@@ -57,7 +58,7 @@ export default function Recommendation() {
             const data = await response.json();
 
             if (response.ok) {
-                console.log(data.books);
+                setSimilarBooks(data.books || []);
                 setMessage(`${data.books?.length || 0} similar books found.`);
             } else {
                 setMessage(data.message || 'Unable to find similar books.');
@@ -126,7 +127,6 @@ export default function Recommendation() {
                     <Text fw={500} c="#3A5B22">
                         Selected Book
                     </Text>
-
                     <Text>
                         {selectedBook.title} by {selectedBook.author}
                     </Text>
@@ -166,6 +166,26 @@ export default function Recommendation() {
                         />
                     ))}
                 </SimpleGrid>
+            )}
+            {similarBooks.length > 0 && (
+                <Flex
+                    direction="column"
+                    w="75%"
+                    mt="xl"
+                >
+                    <Title c="#3A5B22" order={2} mb="md">
+                        Similar Books
+                    </Title>
+                    <SimpleGrid cols={2} spacing="md">
+                        {similarBooks.map((book) => (
+                            <BookCard
+                                key={book.id}
+                                book={book}
+                                mode="recommendation"
+                            />
+                        ))}
+                    </SimpleGrid>
+                </Flex>
             )}
         </Flex>
     );
