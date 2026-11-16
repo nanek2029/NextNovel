@@ -6,20 +6,33 @@ import {
     Text,
     Title,
 } from '@mantine/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import BookCard from '../secondary/BookCard';
 import type { BookStatus } from '../secondary/BookCard';
-import { dummyBookData } from '../secondary/dummyBookData';
 
 // this is just a placeholder to show what the bookshelf version of the book card looks like
 
 export default function Bookshelf() {
-    const [books, setBooks] = useState(
-        dummyBookData.map((book) => ({
-            ...book,
-            status: 'want to read' as BookStatus,
-        }))
-    );
+    const [books, setBooks] = useState<Book[]>([]);
+    useEffect(() => {
+        const fetchSavedBooks = async () => {
+            try {
+                const response = await fetch('/api/books/saved', {
+                    credentials: 'include',
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setBooks(data.books || []);
+                }
+            } catch (error) {
+                console.error('Failed to load bookshelf:', error);
+            }
+        };
+
+        void fetchSavedBooks();
+    }, []);
 
     const [filter, setFilter] = useState<BookStatus | 'all'>('all');
 
@@ -122,10 +135,26 @@ export default function Bookshelf() {
                                         return;
                                     }
                                 }}
-                                onRemove={() => {
-                                    setBooks((previous) =>
-                                        previous.filter((item) => item.id !== book.id)
-                                    );
+                                onRemove={async () => {
+                                    try {
+                                        const response = await fetch(
+                                            `/api/books/saved/${book.id}`,
+                                            {
+                                                method: 'DELETE',
+                                                credentials: 'include',
+                                            }
+                                        );
+
+                                        if (!response.ok) {
+                                            return;
+                                        }
+
+                                        setBooks((previous) =>
+                                            previous.filter((item) => item.id !== book.id)
+                                        );
+                                    } catch (error) {
+                                        console.error('Failed to remove book:', error);
+                                    }
                                 }}
                             />
                         ))}

@@ -45,6 +45,27 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
     ];
 
     const [added, setAdded] = useState(false);
+    const addToBookshelf = async () => {
+        try {
+            const response = await fetch('/api/books/saved', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    book
+                })
+            });
+
+            if (response.ok) {
+                setAdded(true);
+                onAdd?.();
+            }
+        } catch (error) {
+            console.error('Failed to add book to bookshelf:', error);
+        }
+    };
 
     return (
         <Flex bg="#FFFFFF" w="100%" p="sm" gap="md" align="center"
@@ -182,10 +203,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                     color="#689f41"
                     radius="xl"
                     size="md"
-                    onClick={() => {
-                        setAdded(!added);
-                        onAdd?.();
-                    }}
+                    onClick={() => void addToBookshelf()}
                     // styles for unchecked state border 
                     styles={{
                         root: {

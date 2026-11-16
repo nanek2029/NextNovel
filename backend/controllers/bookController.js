@@ -576,7 +576,147 @@ const getSimilarBooks = async (req, res) => {
         });
     }
 };
+// Get the logged-in user's saved books
+const getSavedBooks = async (req, res) => {
+    try {
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                message: 'You must be logged in to view your bookshelf.'
+            });
+        }
 
+        const user = await User.findById(req.session.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+
+        const books = user.savedBooks.map((item) => item.book);
+
+        return res.status(200).json({
+            books
+        });
+    } catch (error) {
+        console.error('Get saved books failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Failed to get saved books.'
+        });
+    }
+};
+
+
+// Add a book to the logged-in user's bookshelf
+const addSavedBook = async (req, res) => {
+    try {
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                message: 'You must be logged in to save a book.'
+            });
+        }
+
+        const book = req.body.book;
+
+        if (!book || !book.id || !book.title) {
+            return res.status(400).json({
+                message: 'A valid book is required.'
+            });
+        }
+
+        const user = await User.findById(req.session.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+
+        const alreadySaved = user.savedBooks.some(
+            (item) => item.book && item.book.id === book.id
+        );
+
+        if (alreadySaved) {
+            return res.status(400).json({
+                message: 'Book is already saved.'
+            });
+        }
+
+        const savedBook = {
+            book: {
+                id: book.id,
+                title: book.title,
+                author: book.author || 'Unknown',
+                genre: book.genre || 'Unknown',
+                year: book.year || 0,
+                thumbnail: book.thumbnail || 'https://placehold.co/80x115?text=No+Cover',
+                status: 'want to read',
+                length: book.length || 0
+            },
+            dateAdded: new Date()
+        };
+
+        user.savedBooks.push(savedBook);
+        await user.save();
+
+        return res.status(201).json({
+            message: 'Book added to bookshelf.',
+            book: savedBook.book
+        });
+    } catch (error) {
+        console.error('Add saved book failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Failed to add book to bookshelf.'
+        });
+    }
+};
+
+
+// Remove a book from the logged-in user's bookshelf
+const removeSavedBook = async (req, res) => {
+    try {
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                message: 'You must be logged in to remove a book.'
+            });
+        }
+
+        const { bookId } = req.params;
+
+        const user = await User.findById(req.session.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+
+        const bookIndex = user.savedBooks.findIndex(
+            (item) => item.book && item.book.id === bookId
+        );
+
+        if (bookIndex === -1) {
+            return res.status(404).json({
+                message: 'Saved book not found.'
+            });
+        }
+
+        user.savedBooks.splice(bookIndex, 1);
+        await user.save();
+
+        return res.status(200).json({
+            message: 'Book removed from bookshelf.'
+        });
+    } catch (error) {
+        console.error('Remove saved book failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Failed to remove book from bookshelf.'
+        });
+    }
+};
 // Update the reading status of a saved book
 const updateReadingStatus = async (req, res) => {
     try {
@@ -643,5 +783,8 @@ module.exports = {
     searchBooks,
     getQuestionnaireRecommendations,
     getSimilarBooks,
+    getSavedBooks,
+    addSavedBook,
+    removeSavedBook,
     updateReadingStatus
 };

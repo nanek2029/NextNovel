@@ -10,6 +10,9 @@ const {
     searchBooks,
     getQuestionnaireRecommendations,
     getSimilarBooks,
+    getSavedBooks,
+    addSavedBook,
+    removeSavedBook,
     updateReadingStatus
 } = require('../controllers/bookController');
 
@@ -24,6 +27,15 @@ router.post('/recommendations', getQuestionnaireRecommendations);
 // Get AI-powered similar-book recommendations
 // POST /api/books/similar
 router.post('/similar', getSimilarBooks);
+
+// Get saved books
+router.get('/saved', getSavedBooks);
+
+// Add a book to bookshelf
+router.post('/saved', addSavedBook);
+
+// Remove a book from bookshelf
+router.delete('/saved/:bookId', removeSavedBook);
 
 // Update the reading status of a saved book
 // PATCH /api/books/saved/:bookId/status
