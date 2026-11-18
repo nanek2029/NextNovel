@@ -1,6 +1,6 @@
 // Omar - NextNovel - Sprint 1
 // PBI #5
-// Sends password recovery emails.
+// Sends password recovery and email verification messages.
 
 const nodemailer = require('nodemailer');
 
@@ -25,6 +25,20 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     });
 };
 
+const sendVerificationEmail = async (email, verificationCode) => {
+    await transporter.sendMail({
+        from: `"NextNovel" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: 'Verify your NextNovel email',
+        text:
+            `Welcome to NextNovel!\n\n` +
+            `Your email verification code is:\n${verificationCode}\n\n` +
+            `This code expires in 15 minutes.\n\n` +
+            `If you did not create this account, you can ignore this email.`
+    });
+};
+
 module.exports = {
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendVerificationEmail
 };
