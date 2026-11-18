@@ -7,6 +7,8 @@ const router = express.Router();
 
 const {
     register,
+    sendVerificationCode,
+    verifyEmail,
     login,
     logout,
     deleteAccount,
@@ -14,6 +16,8 @@ const {
 } = require('../controllers/authController');
 
 router.post('/register', register);
+router.post('/send-verification', sendVerificationCode);
+router.post('/verify-email', verifyEmail);
 router.post('/login', login);
 router.post('/logout', logout);
 router.delete('/delete', deleteAccount);
