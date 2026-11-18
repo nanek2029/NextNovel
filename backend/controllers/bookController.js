@@ -20,11 +20,21 @@ const validateSelectedBook = (book) => {
     const author = typeof book.author === 'string' ? book.author.trim() : '';
     const genre = typeof book.genre === 'string' ? book.genre.trim() : '';
     const year = Number(book.year) || 0;
+    const description =
+        typeof book.description === 'string'
+            ? book.description.trim()
+            : '';
     if (!title) {
         throw new Error('The selected book must have a title')
     }
 
-    return { title, author, genre, year };
+    return {
+        title,
+        author,
+        genre,
+        year,
+        description
+    };
 };
 
 // Ask Gemini for real book candidates similar to the selected book
@@ -42,6 +52,7 @@ Title: ${selectedBook.title}
 Author: ${selectedBook.author || 'Unknown'}
 Genre: ${selectedBook.genre || 'Unknown'}
 Year: ${selectedBook.year || 'Unknown'}
+Description: ${selectedBook.description || 'Unknown'}
 
 Requirements:
 - Recommend only real, published books.
@@ -236,6 +247,7 @@ const verifyBookWithGoogle = async (candidate) => {
             : 0,
         thumbnail: info.imageLinks?.thumbnail || '',
         length: info.pageCount || 0,
+        description: info.description || '',
         reason: candidate.reason
     };
 };
@@ -771,10 +783,16 @@ const updateReadingStatus = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Reading status update failed:', error.message);
+        console.error('Similar-book recommendations failed:', error.message);
 
-        return res.status(500).json({
-            message: 'Internal server error while updating reading status.'
+        const temporaryError =
+            error.message.includes('429') ||
+            error.message.includes('503');
+
+        return res.status(temporaryError ? 503 : 502).json({
+            message: temporaryError
+                ? 'AI service is temporarily busy. Please try again.'
+                : 'Failed to generate similar-book recommendations.'
         });
     }
 };

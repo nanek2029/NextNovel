@@ -16,6 +16,7 @@ export default function Recommendation() {
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
     const [similarBooks, setSimilarBooks] = useState<Book[]>([]);
     const [message, setMessage] = useState('');
+    const [loadingSimilar, setLoadingSimilar] = useState(false);
 
     // Search Google Books
     const fetchBooks = async () => {
@@ -23,18 +24,39 @@ export default function Recommendation() {
             return;
         }
 
+        setSelectedBook(null);
+        setSimilarBooks([]);
+        setMessage('');
+
         try {
-            const response = await fetch(
+            // First try an exact-ish title search
+            let response = await fetch(
                 `/api/books/search?q=${encodeURIComponent(search)}&type=title`
             );
 
-            const data = await response.json();
+            let data = await response.json();
+            let results = data.books || [];
+
+            // If nothing is found, try a broader search
+            if (response.ok && results.length === 0) {
+                response = await fetch(
+                    `/api/books/search?q=${encodeURIComponent(search)}`
+                );
+
+                data = await response.json();
+                results = data.books || [];
+            }
 
             if (response.ok) {
-                setBooks((data.books || []).slice(0, 8));
+                setBooks(results.slice(0, 8));
+
+                if (results.length === 0) {
+                    setMessage('No books found. Try a different search.');
+                }
             }
         } catch (error) {
             console.error('Book search failed:', error);
+            setMessage('Unable to search for books.');
         }
     };
 
@@ -43,6 +65,9 @@ export default function Recommendation() {
         if (!selectedBook) {
             return;
         }
+
+        setLoadingSimilar(true);
+        setMessage('');
 
         try {
             const response = await fetch('/api/books/similar', {
@@ -59,13 +84,19 @@ export default function Recommendation() {
 
             if (response.ok) {
                 setSimilarBooks(data.books || []);
-                setMessage(`${data.books?.length || 0} similar books found.`);
+                setMessage(
+                    `${data.books?.length || 0} similar books found.`
+                );
             } else {
-                setMessage(data.message || 'Unable to find similar books.');
+                setMessage(
+                    data.message || 'Unable to find similar books.'
+                );
             }
         } catch (error) {
             console.error('Similar book request failed:', error);
             setMessage('Unable to find similar books.');
+        } finally {
+            setLoadingSimilar(false);
         }
     };
 
@@ -108,10 +139,19 @@ export default function Recommendation() {
                         }
                     }}
                 />
-                <Button color="#3A5B22" onClick={fetchBooks}>
+
+                <Button
+                    color="#3A5B22"
+                    onClick={() => void fetchBooks()}
+                >
                     Search
                 </Button>
             </Flex>
+            {message && !selectedBook && (
+                <Text mt="sm" c="#637a4e">
+                    {message}
+                </Text>
+            )}
 
             {selectedBook && (
                 <Flex
@@ -127,13 +167,18 @@ export default function Recommendation() {
                     <Text fw={500} c="#3A5B22">
                         Selected Book
                     </Text>
+
                     <Text>
-                        {selectedBook.title} by {selectedBook.author}
+                        {selectedBook.title}
+                        {selectedBook.author
+                            ? ` by ${selectedBook.author}`
+                            : ''}
                     </Text>
 
                     <Button
                         color="#3A5B22"
                         mt="sm"
+                        loading={loadingSimilar}
                         onClick={() => void findSimilarBooks()}
                     >
                         Find Similar Books
@@ -145,6 +190,7 @@ export default function Recommendation() {
                         </Text>
                     )}
                 </Flex>
+
             )}
 
             {books.length > 0 && (
@@ -161,12 +207,14 @@ export default function Recommendation() {
                             mode="similar"
                             onSelect={() => {
                                 setSelectedBook(book);
+                                setSimilarBooks([]);
                                 setMessage('');
                             }}
                         />
                     ))}
                 </SimpleGrid>
             )}
+
             {similarBooks.length > 0 && (
                 <Flex
                     direction="column"
@@ -176,6 +224,7 @@ export default function Recommendation() {
                     <Title c="#3A5B22" order={2} mb="md">
                         Similar Books
                     </Title>
+
                     <SimpleGrid cols={2} spacing="md">
                         {similarBooks.map((book) => (
                             <BookCard
