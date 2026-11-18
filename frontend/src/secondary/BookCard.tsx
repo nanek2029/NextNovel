@@ -20,6 +20,7 @@ export type Book = {
     thumbnail: string;
     status?: BookStatus;
     length: number;
+    reason?: string;
 };
 
 // parameters of a bookcard component 
@@ -127,6 +128,12 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                         {book.length} pages
                     </Text>
                 </Group>
+
+                {mode === 'recommendation' && book.reason && (
+                    <Text size="sm" c="#637a4e" mt="xs">
+                        Why: {book.reason}
+                    </Text>
+                )}
 
                 {/* If a bookcard is in bookshelf mode you can change its status and remove it from list */}
                 {mode === 'bookshelf' && (
