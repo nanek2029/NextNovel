@@ -52,9 +52,11 @@ export default function Signup() {
             }
 
             // redirect to email verification page on success
-            navigate('/verifyemail');
-        } catch (err: any) {
-            setError(err.message);
+            navigate('/verifyemail', {
+                state: { email: data.email || email.trim().toLowerCase() },
+            });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Registration failed');
         } finally {
             setLoading(false);
         }
