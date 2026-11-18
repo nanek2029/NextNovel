@@ -280,9 +280,6 @@ export default function Search() {
                                     book={book}
                                     mode="recommendation"
                                     loggedIn={isLoggedIn}
-                                    onAdd={() => {
-                                        // Later: add book to bookshelf
-                                    }}
                                 />
                             ))}
                         </SimpleGrid>
