@@ -3,7 +3,21 @@
 // Handles user registration, login, and logout.
 
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const User = require('../models/user');
+const PendingUser = require('../models/pendingUser');
+const { sendVerificationEmail } = require('../services/emailService');
+
+const VERIFICATION_CODE_LIFETIME_MS = 15 * 60 * 1000;
+
+const createVerificationCode = () => {
+    const code = crypto.randomInt(100000, 1000000).toString();
+    return {
+        code,
+        hash: crypto.createHash('sha256').update(code).digest('hex'),
+        expires: new Date(Date.now() + VERIFICATION_CODE_LIFETIME_MS)
+    };
+};
 
 // Register a new user
 const register = async (req, res) => {
@@ -26,41 +40,153 @@ const register = async (req, res) => {
         const normalizedUsername = username.trim();
 
         // Make sure username or email is not already being used
-        const existingUser = await User.findOne({
-            $or: [
-                { email: normalizedEmail },
-                { username: normalizedUsername }
-            ]
-        });
+        const [existingUser, pendingUser] = await Promise.all([
+            User.findOne({
+                $or: [
+                    { email: normalizedEmail },
+                    { username: normalizedUsername }
+                ]
+            }),
+            PendingUser.findOne({
+                $or: [
+                    { email: normalizedEmail },
+                    { username: normalizedUsername }
+                ]
+            })
+        ]);
 
-        if (existingUser) {
+        if (existingUser || pendingUser) {
             return res.status(409).json({
-                message: 'Username or email is already in use.'
+                message: 'Username or email is already in use, or awaiting verification.'
             });
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
+        const verification = createVerificationCode();
 
-        const user = await User.create({
+        await PendingUser.create({
             username: normalizedUsername,
             email: normalizedEmail,
-            passwordHash
+            passwordHash,
+            verificationCodeHash: verification.hash,
+            verificationCodeExpires: verification.expires
         });
 
+        try {
+            await sendVerificationEmail(normalizedEmail, verification.code);
+        } catch (error) {
+            console.error('Verification email failed:', error.message);
+            return res.status(500).json({
+                message: 'Unable to send verification email. Please try again.'
+            });
+        }
+
         return res.status(201).json({
-            message: 'Account created successfully.',
+            message: 'Verification email sent. Please verify your email to finish creating your account.',
+            email: normalizedEmail
+        });
+    } catch (error) {
+        console.error('Registration failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Internal server error while creating account.'
+        });
+    }
+};
+
+const sendVerificationCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required.' });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const pendingUser = await PendingUser.findOne({ email: normalizedEmail });
+
+        if (!pendingUser) {
+            return res.status(404).json({
+                message: 'No pending registration was found for that email.'
+            });
+        }
+
+        const verification = createVerificationCode();
+        pendingUser.verificationCodeHash = verification.hash;
+        pendingUser.verificationCodeExpires = verification.expires;
+        await pendingUser.save();
+
+        await sendVerificationEmail(normalizedEmail, verification.code);
+
+        return res.status(200).json({
+            message: 'A new verification code has been sent.'
+        });
+    } catch (error) {
+        console.error('Verification email resend failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Unable to send verification email.'
+        });
+    }
+};
+
+const verifyEmail = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({
+                message: 'Email and verification code are required.'
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const normalizedCode = code.trim();
+
+        if (!/^\d{6}$/.test(normalizedCode)) {
+            return res.status(400).json({
+                message: 'Verification code must be six digits.'
+            });
+        }
+
+        const codeHash = crypto
+            .createHash('sha256')
+            .update(normalizedCode)
+            .digest('hex');
+
+        const pendingUser = await PendingUser.findOne({
+            email: normalizedEmail,
+            verificationCodeHash: codeHash,
+            verificationCodeExpires: { $gt: new Date() }
+        });
+
+        if (!pendingUser) {
+            return res.status(400).json({
+                message: 'Verification code is invalid or has expired.'
+            });
+        }
+
+        const user = await User.create({
+            username: pendingUser.username,
+            email: pendingUser.email,
+            passwordHash: pendingUser.passwordHash
+        });
+
+        await PendingUser.deleteOne({ _id: pendingUser._id });
+
+        return res.status(201).json({
+            message: 'Email verified and account created successfully.',
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email
             }
         });
-
     } catch (error) {
-        console.error('Registration failed:', error.message);
+        console.error('Email verification failed:', error.message);
 
         return res.status(500).json({
-            message: 'Internal server error while creating account.'
+            message: 'Internal server error while verifying email.'
         });
     }
 };
@@ -225,6 +351,8 @@ const getAccount = async (req, res) => {
 
 module.exports = {
     register,
+    sendVerificationCode,
+    verifyEmail,
     login,
     logout,
     deleteAccount,
