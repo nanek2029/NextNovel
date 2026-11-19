@@ -7,7 +7,7 @@ import {
     Text,
     Title,
 } from '@mantine/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ResetPassword() {
@@ -18,15 +18,35 @@ export default function ResetPassword() {
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
 
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
+    const [currentPasswordError, setCurrentPasswordError] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const response = await fetch('/api/auth/account');
+                setIsLoggedIn(response.ok);
+            } catch {
+                setIsLoggedIn(false);
+            } finally {
+                setIsAuthLoading(false);
+            }
+        };
+
+        checkAuth();
+    }, []);
 
     const handleResetPassword = async () => {
         let hasError = false;
 
         setPasswordError('');
         setConfirmPasswordError('');
+        setCurrentPasswordError('');
 
         if (!password) {
             setPasswordError('Please fill out password field.');
@@ -35,6 +55,11 @@ export default function ResetPassword() {
 
         if (!confirmPassword) {
             setConfirmPasswordError('Please fill out password field.');
+            hasError = true;
+        }
+
+        if (isLoggedIn && !currentPassword) {
+            setCurrentPasswordError('Please enter your current password.');
             hasError = true;
         }
 
@@ -52,14 +77,14 @@ export default function ResetPassword() {
             return;
         }
 
-        if (!token) {
+        if (!isLoggedIn && !token) {
             setPasswordError('Reset token is missing.');
             return;
         }
 
         try {
             const response = await fetch(
-                '/api/auth/reset-password',
+                isLoggedIn ? '/api/auth/change-password' : '/api/auth/reset-password',
                 {
                     method: 'POST',
                     headers: {
@@ -68,6 +93,7 @@ export default function ResetPassword() {
                     body: JSON.stringify({
                         token,
                         newPassword: password,
+                        currentPassword: isLoggedIn ? currentPassword : undefined,
                     }),
                 }
             );
@@ -79,7 +105,7 @@ export default function ResetPassword() {
                 return;
             }
 
-            navigate('/login');
+            navigate(isLoggedIn ? '/account' : '/login');
         } catch {
             setPasswordError('Unable to connect to the server.');
         }
@@ -104,6 +130,17 @@ export default function ResetPassword() {
                     <Text c="#637A4E">
                         Enter a new password for your account.
                     </Text>
+
+                    {!isAuthLoading && isLoggedIn && (
+                        <PasswordInput
+                            label="Current Password"
+                            placeholder="Enter your current password..."
+                            value={currentPassword}
+                            onChange={(event) => setCurrentPassword(event.currentTarget.value)}
+                            error={currentPasswordError}
+                            c="#3A5B22"
+                        />
+                    )}
 
                     <PasswordInput
                         label="New Password"
@@ -132,13 +169,15 @@ export default function ResetPassword() {
                         Reset password
                     </Button>
 
-                    <Button
-                        variant="subtle"
-                        color="#3A5B22"
-                        onClick={() => navigate('/reset-code')}
-                    >
-                        Back to reset token
-                    </Button>
+                    {!isAuthLoading && !isLoggedIn && (
+                        <Button
+                            variant="subtle"
+                            color="#3A5B22"
+                            onClick={() => navigate('/reset-code')}
+                        >
+                            Back to reset token
+                        </Button>
+                    )}
                 </Stack>
             </Container>
         </Flex>

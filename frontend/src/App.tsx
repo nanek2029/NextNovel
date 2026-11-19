@@ -18,6 +18,7 @@ import Search from './pages/Search';
 import Questionnaire from './pages/Questionnaire';
 import AdminDashboard from './pages/AdminDashboard';
 import CheckStatus from './secondary/checkStatus'; 
+import GuestOnly from './secondary/GuestOnly';
 
 export default function App() {
   
@@ -30,9 +31,17 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/forgotpassword" element={<ForgotPassword/>}/>
+          <Route path="/forgotpassword" element={
+            <GuestOnly>
+              <ForgotPassword />
+            </GuestOnly>
+          }/>
           <Route path="/verifyemail" element={<VerifyEmail/>}/>
-          <Route path="/reset-code" element={<ResetCode />} />
+          <Route path="/reset-code" element={
+            <GuestOnly>
+              <ResetCode />
+            </GuestOnly>
+          } />
           <Route path="/reset-password" element={<ResetPassword />} />
 
           // routes that need to be protected 
