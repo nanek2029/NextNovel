@@ -80,6 +80,10 @@ const userSchema = new mongoose.Schema({
     savedBooks: {
         type: [savedBookSchema],
         default: []
+    },
+    recommendedBookIds: {
+        type: [String],
+        default: []
     }
 });
 
