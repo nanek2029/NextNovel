@@ -248,6 +248,7 @@ const verifyBookWithGoogle = async (candidate) => {
         thumbnail: info.imageLinks?.thumbnail || '',
         length: info.pageCount || 0,
         description: info.description || '',
+        infoLink: info.infoLink || '',
         reason: candidate.reason
     };
 };
@@ -354,6 +355,7 @@ const searchBooks = async (req, res) => {
                     : 0,
                 thumbnail: info.imageLinks?.thumbnail || '',
                 length: info.pageCount || 0,
+                infoLink: info.infoLink || ''
             };
         });
 
@@ -664,7 +666,8 @@ const addSavedBook = async (req, res) => {
                 year: book.year || 0,
                 thumbnail: book.thumbnail || 'https://placehold.co/80x115?text=No+Cover',
                 status: 'want to read',
-                length: book.length || 0
+                length: book.length || 0,
+                infoLink: book.infoLink || ''
             },
             dateAdded: new Date()
         };

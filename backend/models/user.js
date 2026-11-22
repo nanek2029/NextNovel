@@ -30,8 +30,13 @@ const bookSchema = new mongoose.Schema({
         enum: ['read', 'reading', 'want to read', 'DNF'],
     },
     length: {
-        type: Number
-    }
+        type: Number,
+    },
+
+    infoLink: {
+        type: String,
+        default: ''
+    },
 });
 
 const savedBookSchema = new mongoose.Schema({
