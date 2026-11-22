@@ -254,8 +254,23 @@ const verifyBookWithGoogle = async (candidate) => {
 };
 
 // Genres currently supported by the questionnaire
-const QUESTIONNAIRE_GENRES =
-    ['Fantasy', 'Science Fiction', 'Mystery', 'Romance', 'Thriller'];
+const QUESTIONNAIRE_GENRES = [
+    'Fantasy',
+    'Science Fiction',
+    'Mystery',
+    'Romance',
+    'Thriller',
+    'Horror',
+    'Historical Fiction',
+    'Adventure',
+    'Young Adult',
+    'Biography & Autobiography',
+    'History',
+    'Self-Help',
+    'Business & Economics',
+    'Health & Fitness',
+    'Music',
+];
 
 // Validate optional page-count and publication-year filters
 const parseQuestionnaireFilter = (filter, fieldName) => {

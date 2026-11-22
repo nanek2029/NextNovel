@@ -105,11 +105,20 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
             }}
             >
                 {/* Book title, author, genre */}
-                <Text c="#3A5B22" fw={500} size="lg" lineClamp={2}>
+                <Text
+                    c="#3A5B22"
+                    fw={500}
+                    size="lg"
+                    lineClamp={2}
+                    style={{
+                        minHeight: '3rem',
+                        lineHeight: 1.35,
+                    }}
+                >
                     {book.title}
                 </Text>
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Author:
                     </Text>
@@ -119,7 +128,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                 </Group>
 
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Genre:
                     </Text>
@@ -137,7 +146,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                     </Text>
                 </Group>
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Length:
                     </Text>
