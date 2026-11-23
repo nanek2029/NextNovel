@@ -15,6 +15,7 @@ const {
     removeSavedBook,
     updateReadingStatus
 } = require('../controllers/bookController');
+const { requireAuth } = require('../middleware/authMiddleware');
 
 // Search for books
 // GET /api/books/search?q=bookTitle&type=title
@@ -29,16 +30,16 @@ router.post('/recommendations', getQuestionnaireRecommendations);
 router.post('/similar', getSimilarBooks);
 
 // Get saved books
-router.get('/saved', getSavedBooks);
+router.get('/saved', requireAuth, getSavedBooks);
 
 // Add a book to bookshelf
-router.post('/saved', addSavedBook);
+router.post('/saved', requireAuth, addSavedBook);
 
 // Remove a book from bookshelf
-router.delete('/saved/:bookId', removeSavedBook);
+router.delete('/saved/:bookId', requireAuth, removeSavedBook);
 
 // Update the reading status of a saved book
 // PATCH /api/books/saved/:bookId/status
-router.patch('/saved/:bookId/status', updateReadingStatus);
+router.patch('/saved/:bookId/status', requireAuth, updateReadingStatus);
 
 module.exports = router;

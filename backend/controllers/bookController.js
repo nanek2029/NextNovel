@@ -636,13 +636,7 @@ const getSimilarBooks = async (req, res) => {
 // Get the logged-in user's saved books
 const getSavedBooks = async (req, res) => {
     try {
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({
-                message: 'You must be logged in to view your bookshelf.'
-            });
-        }
-
-        const user = await User.findById(req.session.userId);
+        const user = await User.findById(req.user._id);
 
         if (!user) {
             return res.status(404).json({
@@ -668,12 +662,6 @@ const getSavedBooks = async (req, res) => {
 // Add a book to the logged-in user's bookshelf
 const addSavedBook = async (req, res) => {
     try {
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({
-                message: 'You must be logged in to save a book.'
-            });
-        }
-
         const book = req.body.book;
 
         if (!book || !book.id || !book.title) {
@@ -682,7 +670,7 @@ const addSavedBook = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.session.userId);
+        const user = await User.findById(req.user._id);
 
         if (!user) {
             return res.status(404).json({
@@ -735,15 +723,9 @@ const addSavedBook = async (req, res) => {
 // Remove a book from the logged-in user's bookshelf
 const removeSavedBook = async (req, res) => {
     try {
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({
-                message: 'You must be logged in to remove a book.'
-            });
-        }
-
         const { bookId } = req.params;
 
-        const user = await User.findById(req.session.userId);
+        const user = await User.findById(req.user._id);
 
         if (!user) {
             return res.status(404).json({
@@ -781,13 +763,6 @@ const updateReadingStatus = async (req, res) => {
         const { bookId } = req.params;
         const { status } = req.body;
 
-        // User must be logged in
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({
-                message: 'You must be logged in to update a book.'
-            });
-        }
-
         const validStatuses = [
             'read',
             'reading',
@@ -801,7 +776,7 @@ const updateReadingStatus = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.session.userId);
+        const user = await User.findById(req.user._id);
 
         if (!user) {
             return res.status(404).json({

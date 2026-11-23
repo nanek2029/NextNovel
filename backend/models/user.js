@@ -28,6 +28,7 @@ const bookSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['read', 'reading', 'want to read', 'DNF'],
+        default: 'want to read'
     },
     length: {
         type: Number,

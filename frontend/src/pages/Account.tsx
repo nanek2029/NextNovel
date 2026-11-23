@@ -1,6 +1,7 @@
 import { Avatar, Button, FileButton, Flex, Stack, TextInput, Title } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch, setAccessToken } from '../secondary/authClient';
 
 export default function Account() {
 
@@ -16,7 +17,7 @@ export default function Account() {
     useEffect(() => {
         const fetchAccountData = async () => {
             try {
-                const response = await fetch('/api/auth/account');
+                const response = await apiFetch('/api/auth/account');
                 const data = await response.json();
 
                 if (response.ok && data.user) {
@@ -172,7 +173,8 @@ export default function Account() {
                     style={{ fontSize: 'var(--mantine-font-size-md)', }} 
                     onClick={async () => {
                         try {
-                            await fetch('/api/auth/logout', { method: 'POST' });
+                            await apiFetch('/api/auth/logout', { method: 'POST' });
+                            setAccessToken(null);
                             navigate('/login');
                         } catch (error) {
                             console.error('Logout failed', error);
@@ -187,7 +189,7 @@ export default function Account() {
                     onClick={async () => {
                         if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
                             try {
-                                const response = await fetch('/api/auth/delete', { method: 'DELETE' });
+                                const response = await apiFetch('/api/auth/delete', { method: 'DELETE' });
                                 if (response.ok) {
                                     navigate('/signup');
                                 } else {

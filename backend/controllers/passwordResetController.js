@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const { revokeUserRefreshSessions } = require('../utils/authTokens');
 
 
 // Request a password reset
@@ -61,6 +62,60 @@ const requestPasswordReset = async (req, res) => {
     }
 };
 
+const changePassword = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                message: 'Unauthorized. Please log in.'
+            });
+        }
+
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                message: 'Current password and new password are required.'
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters long.'
+            });
+        }
+
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
+
+        const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: 'Current password is incorrect.'
+            });
+        }
+
+        user.passwordHash = await bcrypt.hash(newPassword, 10);
+        await user.save();
+        await revokeUserRefreshSessions(user._id);
+
+        return res.status(200).json({
+            message: 'Password updated successfully.'
+        });
+    } catch (error) {
+        console.error('Password change failed:', error.message);
+
+        return res.status(500).json({
+            message: 'Internal server error while changing password.'
+        });
+    }
+};
+
 // Reset the user's password
 const resetPassword = async (req, res) => {
     try {
@@ -102,6 +157,7 @@ const resetPassword = async (req, res) => {
         user.resetPasswordExpires = null;
 
         await user.save();
+        await revokeUserRefreshSessions(user._id);
 
         return res.status(200).json({
             message: 'Password updated successfully.'
@@ -118,5 +174,6 @@ const resetPassword = async (req, res) => {
 
 module.exports = {
     requestPasswordReset,
-    resetPassword
+    resetPassword,
+    changePassword
 };

@@ -2,6 +2,7 @@ import { Flex, Autocomplete, rem, ActionIcon, Menu, Divider, Text, SimpleGrid, B
 import { useEffect, useState } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, XIcon } from '@phosphor-icons/react';
 import BookCard from '../secondary/BookCard';
+import { apiFetch, getAccessToken, refreshAccessToken } from '../secondary/authClient';
 
 type SearchHistoryItem = {
     search: string;
@@ -21,7 +22,10 @@ export default function Search() {
     useEffect(() => {
         const checkAuthStatus = async () => {
         try {
-            const response = await fetch('/api/auth/account');
+            if (!getAccessToken()) {
+                await refreshAccessToken();
+            }
+            const response = await apiFetch('/api/auth/account');
             if (response.ok) {
             setIsLoggedIn(true);
             } else {
