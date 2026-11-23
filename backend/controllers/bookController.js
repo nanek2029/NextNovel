@@ -1,5 +1,5 @@
 // Omar - NextNovel
-// Jira Tasks: PBI #10, PBI #12, PBI #14, and PBI #18
+// Jira Tasks: PBI #10, PBI #12, PBI #14, PBI #18, and PBI #20
 // Handles book search, questionnaire recommendations,
 // AI similar-book recommendations, and saved-book reading status updates.
 
@@ -534,6 +534,19 @@ const getQuestionnaireRecommendations = async (req, res) => {
 // Get AI-powered similar-book recommendations
 const getSimilarBooks = async (req, res) => {
     try {
+        // User must be logged in so recommendation history can be stored
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                message: 'You must be logged in to get recommendations.'
+            });
+        }
+        const user = await User.findById(req.session.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.'
+            });
+        }
         let selectedBook;
 
         // Validate the book sent from the frontend
@@ -545,6 +558,11 @@ const getSimilarBooks = async (req, res) => {
             });
         }
 
+        // Books already recommended to this user in previous requests
+        const previouslyRecommendedIds = new Set(
+            user.recommendedBookIds || []
+        );
+
         // Ask Gemini for candidate recommendations
         const candidates = await getGeminiBookCandidates(selectedBook);
 
@@ -552,7 +570,6 @@ const getSimilarBooks = async (req, res) => {
         const seenBookIds = new Set();
 
         const selectedTitle = selectedBook.title.toLowerCase().trim();
-
         const selectedAuthor = selectedBook.author.toLowerCase().trim();
 
         // Verify Gemini's suggestions through Google Books
@@ -570,7 +587,6 @@ const getSimilarBooks = async (req, res) => {
             }
 
             const verifiedTitle = verifiedBook.title.toLowerCase().trim();
-
             const verifiedAuthor = verifiedBook.author.toLowerCase().trim();
 
             // Do not recommend the book the user already selected
@@ -587,9 +603,20 @@ const getSimilarBooks = async (req, res) => {
                 continue;
             }
 
+            // Avoid books previously recommend to this user
+            if (previouslyRecommendedIds.has(verifiedBook.id)) {
+                continue;
+            }
+
             seenBookIds.add(verifiedBook.id);
             verifiedBooks.push(verifiedBook);
         }
+
+        // Store the books returned during this request
+        const newRecommendationIds = verifiedBooks.map((book) => book.id);
+        user.recommendedBookIds = [...(user.recommendedBookIds || []), ...newRecommendationIds].slice(-100);
+
+        await user.save();
 
         return res.status(200).json({
             books: verifiedBooks
@@ -605,6 +632,7 @@ const getSimilarBooks = async (req, res) => {
         });
     }
 };
+
 // Get the logged-in user's saved books
 const getSavedBooks = async (req, res) => {
     try {
