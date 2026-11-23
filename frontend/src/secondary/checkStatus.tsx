@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flex, Loader } from '@mantine/core';
+import { apiFetch, getAccessToken, refreshAccessToken } from './authClient';
 
 interface checkStatusProps {
   children: React.ReactNode;
@@ -20,7 +21,15 @@ export default function CheckStatus({ children, adminOnly = false }: checkStatus
     const verifyAuth = async () => {
 
       try {
-        const response = await fetch('/api/auth/account');
+        if (!getAccessToken()) {
+          const refreshed = await refreshAccessToken();
+          if (!refreshed) {
+            navigate('/login');
+            return;
+          }
+        }
+
+        const response = await apiFetch('/api/auth/account');
         const data = await response.json();
 
         if (response.ok) {

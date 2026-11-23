@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TrashIcon, CaretDownIcon } from '@phosphor-icons/react';
 import { Table, Loader, Text, Center, ActionIcon, Menu, Flex } from '@mantine/core';
+import { apiFetch } from './authClient';
 
 // Inspired by mantine ui  https://mantine.dev/core/table/ table component 
 
@@ -22,7 +23,7 @@ export default function UserTable() {
         const fetchUsers = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('/api/admin/users');
+                const response = await apiFetch('/api/admin/users');
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch user data');
@@ -44,7 +45,7 @@ export default function UserTable() {
    const handleDelete = async (identifier: string) => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         try {
-            const response = await fetch(`/api/admin/users/${identifier}`, {
+            const response = await apiFetch(`/api/admin/users/${identifier}`, {
                 method: 'DELETE',
             });
 
@@ -62,7 +63,7 @@ export default function UserTable() {
     // changing role of a user 
     const handleRoleChange = async (identifier: string, newRole: string) => {
         try {
-            const response = await fetch(`/api/admin/users/${identifier}/role`, {
+            const response = await apiFetch(`/api/admin/users/${identifier}/role`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

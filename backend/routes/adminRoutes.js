@@ -6,10 +6,10 @@ const {
     deleteUser,
     updateUserRole
 } = require('../controllers/adminController');
-const { requireAdmin } = require('../middleware/authMiddleware');
+const { requireAuth, requireAdmin } = require('../middleware/authMiddleware');
 
-router.get('/users', requireAdmin, getUsers);
-router.delete('/users/:userId', requireAdmin, deleteUser);
-router.patch('/users/:userId/role', requireAdmin, updateUserRole);
+router.get('/users', requireAuth, requireAdmin, getUsers);
+router.delete('/users/:userId', requireAuth, requireAdmin, deleteUser);
+router.patch('/users/:userId/role', requireAuth, requireAdmin, updateUserRole);
 
 module.exports = router;

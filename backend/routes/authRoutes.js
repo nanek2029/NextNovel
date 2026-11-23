@@ -12,16 +12,19 @@ const {
     login,
     logout,
     deleteAccount,
-    getAccount
+    getAccount,
+    refresh,
 } = require('../controllers/authController');
+const { requireAuth } = require('../middleware/authMiddleware');
 
 router.post('/register', register);
 router.post('/send-verification', sendVerificationCode);
 router.post('/verify-email', verifyEmail);
 router.post('/login', login);
 router.post('/logout', logout);
-router.delete('/delete', deleteAccount);
-router.get('/account', getAccount);
+router.post('/refresh', refresh);
+router.delete('/delete', requireAuth, deleteAccount);
+router.get('/account', requireAuth, getAccount);
 
 
 module.exports = router;

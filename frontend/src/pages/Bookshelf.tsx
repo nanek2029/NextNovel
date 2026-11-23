@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import BookCard from '../secondary/BookCard';
 import type { BookStatus } from '../secondary/BookCard';
+import { apiFetch } from '../secondary/authClient';
 
 // this is just a placeholder to show what the bookshelf version of the book card looks like
 
@@ -17,9 +18,7 @@ export default function Bookshelf() {
     useEffect(() => {
         const fetchSavedBooks = async () => {
             try {
-                const response = await fetch('/api/books/saved', {
-                    credentials: 'include',
-                });
+                const response = await apiFetch('/api/books/saved');
 
                 const data = await response.json();
 
@@ -110,7 +109,7 @@ export default function Bookshelf() {
                                 status={book.status}
                                 onStatusChange={async (status) => {
                                     try {
-                                        const response = await fetch(
+                                        const response = await apiFetch(
                                             `/api/books/saved/${book.id}/status`,
                                             {
                                                 method: 'PATCH',
@@ -137,7 +136,7 @@ export default function Bookshelf() {
                                 }}
                                 onRemove={async () => {
                                     try {
-                                        const response = await fetch(
+                                        const response = await apiFetch(
                                             `/api/books/saved/${book.id}`,
                                             {
                                                 method: 'DELETE',

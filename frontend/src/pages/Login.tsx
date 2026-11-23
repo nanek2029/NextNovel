@@ -2,6 +2,7 @@ import { Group, Text, Image, Title, Container, Stack, Button, PasswordInput, Tex
 import { Link, useNavigate } from 'react-router-dom';
 import { useState} from 'react'; 
 import Login_pic from '../assets/log_in_pic.jpg';
+import { setAccessToken } from '../secondary/authClient';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function Login() {
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     // send as email if it contains '@', otherwise send as username
@@ -40,6 +42,8 @@ export default function Login() {
             if (!response.ok) {
                 throw new Error(data.message || 'Login failed');
             }
+
+            setAccessToken(data.accessToken || null);
 
             // if successful go to the search page
             navigate('/search');

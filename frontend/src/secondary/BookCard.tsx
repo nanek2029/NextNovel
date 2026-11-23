@@ -1,6 +1,7 @@
 import { ActionIcon, Flex, Image, Menu, Stack, Text, Group, Button } from '@mantine/core';
 import { CaretDownIcon, PlusIcon, TrashIcon, CheckIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { apiFetch } from './authClient';
 
 // **important ** the size is relative it just has an aspect ratio that it maintains. I was thinkining in the bookhelf it should be smaller. 
 
@@ -48,7 +49,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
     const [added, setAdded] = useState(false);
     const addToBookshelf = async () => {
         try {
-            const response = await fetch('/api/books/saved', {
+            const response = await apiFetch('/api/books/saved', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

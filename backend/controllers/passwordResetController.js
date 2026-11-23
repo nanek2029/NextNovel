@@ -6,17 +6,12 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const { revokeUserRefreshSessions } = require('../utils/authTokens');
 
 
 // Request a password reset
 const requestPasswordReset = async (req, res) => {
     try {
-        if (req.session && req.session.userId) {
-            return res.status(403).json({
-                message: 'You are already logged in.'
-            });
-        }
-
         const { email } = req.body;
 
         if (!email) {
@@ -69,7 +64,7 @@ const requestPasswordReset = async (req, res) => {
 
 const changePassword = async (req, res) => {
     try {
-        if (!req.session || !req.session.userId) {
+        if (!req.user) {
             return res.status(401).json({
                 message: 'Unauthorized. Please log in.'
             });
@@ -89,7 +84,7 @@ const changePassword = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.session.userId);
+        const user = await User.findById(req.user._id);
 
         if (!user) {
             return res.status(404).json({
@@ -107,6 +102,7 @@ const changePassword = async (req, res) => {
 
         user.passwordHash = await bcrypt.hash(newPassword, 10);
         await user.save();
+        await revokeUserRefreshSessions(user._id);
 
         return res.status(200).json({
             message: 'Password updated successfully.'
@@ -123,12 +119,6 @@ const changePassword = async (req, res) => {
 // Reset the user's password
 const resetPassword = async (req, res) => {
     try {
-        if (req.session && req.session.userId) {
-            return res.status(403).json({
-                message: 'Use the account password-change flow while logged in.'
-            });
-        }
-
         const { token, newPassword } = req.body;
 
         if (!token || !newPassword) {
@@ -167,6 +157,7 @@ const resetPassword = async (req, res) => {
         user.resetPasswordExpires = null;
 
         await user.save();
+        await revokeUserRefreshSessions(user._id);
 
         return res.status(200).json({
             message: 'Password updated successfully.'

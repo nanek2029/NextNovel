@@ -4,6 +4,7 @@ import { useDisclosure } from '@mantine/hooks';
 import classes from './Header.module.scss';
 import { MagnifyingGlassIcon, CaretDown } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { apiFetch, getAccessToken, refreshAccessToken } from './authClient';
 
 const links = [
   { link: '/', label: 'Home' },
@@ -30,7 +31,10 @@ export default function Header() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch('/api/auth/account');
+        if (!getAccessToken()) {
+          await refreshAccessToken();
+        }
+        const response = await apiFetch('/api/auth/account');
         const data = await response.json();
         if (response.ok) {
           setIsLoggedIn(true);

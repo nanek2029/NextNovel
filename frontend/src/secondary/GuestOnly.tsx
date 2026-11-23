@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Flex, Loader } from '@mantine/core';
+import { apiFetch, getAccessToken, refreshAccessToken } from './authClient';
 
 interface GuestOnlyProps {
     children: React.ReactNode;
@@ -14,7 +15,10 @@ export default function GuestOnly({ children }: GuestOnlyProps) {
     useEffect(() => {
         const verifyGuest = async () => {
             try {
-                const response = await fetch('/api/auth/account');
+                if (!getAccessToken()) {
+                    await refreshAccessToken();
+                }
+                const response = await apiFetch('/api/auth/account');
                 setIsGuest(!response.ok);
 
                 if (response.ok) {

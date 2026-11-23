@@ -9,6 +9,7 @@ import {
 } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { apiFetch, getAccessToken, refreshAccessToken } from '../secondary/authClient';
 
 export default function ResetPassword() {
     const navigate = useNavigate();
@@ -29,7 +30,10 @@ export default function ResetPassword() {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await fetch('/api/auth/account');
+                if (!getAccessToken()) {
+                    await refreshAccessToken();
+                }
+                const response = await apiFetch('/api/auth/account');
                 setIsLoggedIn(response.ok);
             } catch {
                 setIsLoggedIn(false);
@@ -83,7 +87,7 @@ export default function ResetPassword() {
         }
 
         try {
-            const response = await fetch(
+            const response = await apiFetch(
                 isLoggedIn ? '/api/auth/change-password' : '/api/auth/reset-password',
                 {
                     method: 'POST',

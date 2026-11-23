@@ -6,7 +6,18 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/user');
 const PendingUser = require('../models/pendingUser');
+const RefreshSession = require('../models/refreshSession');
 const { sendVerificationEmail } = require('../services/emailService');
+const {
+    createAccessToken,
+    createRefreshSession,
+    rotateRefreshSession,
+    revokeRefreshFamily,
+    revokeUserRefreshSessions,
+    setRefreshCookie,
+    clearRefreshCookie,
+    hashRefreshToken
+} = require('../utils/authTokens');
 
 const VERIFICATION_CODE_LIFETIME_MS = 15 * 60 * 1000;
 
@@ -231,12 +242,13 @@ const login = async (req, res) => {
             });
         }
 
-        // Store authenticated user information in the session
-        req.session.userId = user._id.toString();
-        req.session.username = user.username;
+        const accessToken = createAccessToken(user);
+        const refreshToken = await createRefreshSession(user);
+        setRefreshCookie(res, refreshToken);
 
         return res.status(200).json({
             message: 'Login successful.',
+            accessToken,
             user: {
                 id: user._id,
                 username: user.username,
@@ -255,36 +267,100 @@ const login = async (req, res) => {
 };
 
 // Log out the current user
-const logout = (req, res) => {
-    req.session.destroy((error) => {
-        if (error) {
-            console.error('Logout failed:', error.message);
-
-            return res.status(500).json({
-                message: 'Unable to log out.'
+const logout = async (req, res) => {
+    try {
+        const rawToken = req.cookies.refreshToken;
+        if (rawToken) {
+            const session = await RefreshSession.findOne({
+                tokenHash: hashRefreshToken(rawToken)
             });
+            if (session) {
+                await revokeRefreshFamily(session.familyId);
+            }
         }
 
-        res.clearCookie('connect.sid');
-
+        clearRefreshCookie(res);
         return res.status(200).json({
             message: 'Logout successful.'
         });
-    });
+    } catch (error) {
+        console.error('Logout failed:', error.message);
+        clearRefreshCookie(res);
+        return res.status(500).json({
+            message: 'Unable to log out.'
+        });
+    }
+};
+
+const refresh = async (req, res) => {
+    try {
+        const rawToken = req.cookies.refreshToken;
+        if (!rawToken) {
+            return res.status(401).json({
+                message: 'Refresh token is missing.'
+            });
+        }
+
+        const storedSession = await RefreshSession.findOne({
+            tokenHash: hashRefreshToken(rawToken)
+        });
+
+        if (!storedSession ||
+            storedSession.revokedAt ||
+            storedSession.expiresAt <= new Date()) {
+            if (storedSession) {
+                await revokeRefreshFamily(storedSession.familyId);
+            }
+            clearRefreshCookie(res);
+            return res.status(401).json({
+                message: 'Refresh token is invalid or revoked.'
+            });
+        }
+
+        const user = await User.findById(storedSession.userId);
+        if (!user) {
+            await revokeRefreshFamily(storedSession.familyId);
+            clearRefreshCookie(res);
+            return res.status(401).json({
+                message: 'User no longer exists.'
+            });
+        }
+
+        const replacementToken = await rotateRefreshSession(storedSession);
+        const accessToken = createAccessToken(user);
+        setRefreshCookie(res, replacementToken);
+
+        return res.status(200).json({
+            accessToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Token refresh failed:', error.message);
+        clearRefreshCookie(res);
+        return res.status(500).json({
+            message: 'Unable to refresh authentication.'
+        });
+    }
 };
 
 // deleting current user acc
 const deleteAccount = async (req, res) => {
     // make sure the user is authenticated before allowing account deletion
     try {
-        if (!req.session.userId) {
+        if (!req.user) {
             return res.status(401).json({
                 message: 'Unauthorized. Please log in.'
             });
         }
 
         //delete  from MongoDB
-        const deletedUser = await User.findByIdAndDelete(req.session.userId);
+        await revokeUserRefreshSessions(req.user._id);
+        const deletedUser = await User.findByIdAndDelete(req.user._id);
 
         if (!deletedUser) {
             return res.status(404).json({
@@ -292,19 +368,9 @@ const deleteAccount = async (req, res) => {
             });
         }
 
-        // end the session and clear cookie
-        req.session.destroy((error) => {
-            if (error) {
-                console.error('Session destruction failed:', error.message);
-                return res.status(500).json({
-                    message: 'Account deleted, but unable to clear session.'
-                });
-            }
-
-            res.clearCookie('connect.sid');
-            return res.status(200).json({
-                message: 'Account deleted successfully.'
-            });
+        clearRefreshCookie(res);
+        return res.status(200).json({
+            message: 'Account deleted successfully.'
         });
 
     } catch (error) {
@@ -320,14 +386,14 @@ const getAccount = async (req, res) => {
 
     // must be logged in
     try {
-        if (!req.session.userId) {
+        if (!req.user) {
             return res.status(401).json({
                 message: 'Unauthorized. Please log in.'
             });
         }
 
         //retrieve data but not password
-        const user = await User.findById(req.session.userId).select('-passwordHash');
+        const user = await User.findById(req.user._id).select('-passwordHash');
         if (!user) {
             return res.status(404).json({
                 message: 'User not found.'
@@ -356,5 +422,6 @@ module.exports = {
     login,
     logout,
     deleteAccount,
-    getAccount
+    getAccount,
+    refresh
 };
