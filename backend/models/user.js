@@ -31,8 +31,13 @@ const bookSchema = new mongoose.Schema({
         default: 'want to read'
     },
     length: {
-        type: Number
-    }
+        type: Number,
+    },
+
+    infoLink: {
+        type: String,
+        default: ''
+    },
 });
 
 const savedBookSchema = new mongoose.Schema({
@@ -80,6 +85,10 @@ const userSchema = new mongoose.Schema({
     },
     savedBooks: {
         type: [savedBookSchema],
+        default: []
+    },
+    recommendedBookIds: {
+        type: [String],
         default: []
     }
 });

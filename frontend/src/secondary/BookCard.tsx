@@ -22,6 +22,7 @@ export type Book = {
     status?: BookStatus;
     length: number;
     reason?: string;
+    infoLink?: string;
 };
 
 // parameters of a bookcard component 
@@ -47,8 +48,24 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
     ];
 
     const [added, setAdded] = useState(false);
-    const addToBookshelf = async () => {
+    const toggleBookshelf = async () => {
         try {
+            if (added) {
+                const response = await fetch(
+                    `/api/books/saved/${book.id}`,
+                    {
+                        method: 'DELETE',
+                        credentials: 'include',
+                    }
+                );
+
+                if (response.ok) {
+                    setAdded(false);
+                }
+
+                return;
+            }
+
             const response = await apiFetch('/api/books/saved', {
                 method: 'POST',
                 headers: {
@@ -65,7 +82,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                 onAdd?.();
             }
         } catch (error) {
-            console.error('Failed to add book to bookshelf:', error);
+            console.error('Failed to update bookshelf:', error);
         }
     };
 
@@ -89,11 +106,20 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
             }}
             >
                 {/* Book title, author, genre */}
-                <Text c="#3A5B22" fw={500} size="lg" lineClamp={2}>
+                <Text
+                    c="#3A5B22"
+                    fw={500}
+                    size="lg"
+                    lineClamp={2}
+                    style={{
+                        minHeight: '3rem',
+                        lineHeight: 1.35,
+                    }}
+                >
                     {book.title}
                 </Text>
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Author:
                     </Text>
@@ -103,7 +129,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                 </Group>
 
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Genre:
                     </Text>
@@ -121,7 +147,7 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                     </Text>
                 </Group>
 
-                <Group gap="xs">
+                <Group gap="xs" align="flex-start" wrap="nowrap">
                     <Text c="#87CA00" fw={500} size="sm">
                         Length:
                     </Text>
@@ -131,7 +157,13 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
                 </Group>
 
                 {mode === 'recommendation' && book.reason && (
-                    <Text size="sm" c="#637a4e" mt="xs">
+                    <Text
+                        size="sm"
+                        c="#637a4e"
+                        mt="xs"
+                        maw={360}
+                        style={{ lineHeight: 1.35 }}
+                    >
                         Why: {book.reason}
                     </Text>
                 )}
@@ -205,40 +237,62 @@ export default function BookCard({ book, mode, status = 'want to read', onStatus
             )}
 
             {/* If a bookcard is in recommendation mode you will only have the option to add it */}
-            {mode === 'recommendation' && loggedIn && (
-                <ActionIcon
-                    variant={added ? 'filled' : 'outline'}
-                    color="#689f41"
-                    radius="xl"
-                    size="md"
-                    onClick={() => void addToBookshelf()}
-                    // styles for unchecked state border 
-                    styles={{
-                        root: {
-                            borderColor: '#689f41',
-                            borderWidth: '1.5px',
-                        },
-                    }}
-                >
-                    {/*toggle between added and unadded icon */}
-                    {added ? (
-                        <CheckIcon size={20} weight="bold"
-                        />
-                    ) : (
-                        <PlusIcon size={20} weight="bold"
-                        />
-                    )}
-                </ActionIcon>
-            )}
-            {mode === 'similar' && (
-                <Button
-                    color="#3A5B22"
-                    variant="light"
-                    onClick={onSelect}
-                >
-                    Use this book
-                </Button>
-            )}
-        </Flex>
+            <Flex
+                justify="space-between"
+                align="center"
+                gap="md"
+                style={{
+                    flexShrink: 0,
+                    marginLeft: '1rem',
+                }}
+            >
+                {mode === 'recommendation' && loggedIn && (
+                    <ActionIcon
+                        variant={added ? 'filled' : 'outline'}
+                        color="#689f41"
+                        radius="xl"
+                        size="md"
+                        onClick={() => void toggleBookshelf()}
+                        styles={{
+                            root: {
+                                borderColor: '#689f41',
+                                borderWidth: '1.5px',
+                            },
+                        }}
+                    >
+                        {added ? (
+                            <CheckIcon size={20} weight="bold" />
+                        ) : (
+                            <PlusIcon size={20} weight="bold" />
+                        )}
+                    </ActionIcon>
+                )}
+
+                {mode === 'similar' && (
+                    <Button
+                        color="#3A5B22"
+                        variant="light"
+                        size="xs"
+                        onClick={onSelect}
+                    >
+                        Use this book
+                    </Button>
+                )}
+
+                {book.infoLink && (
+                    <Button
+                        component="a"
+                        href={book.infoLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="light"
+                        color="#3A5B22"
+                        size="xs"
+                    >
+                        Find a Copy
+                    </Button>
+                )}
+            </Flex>
+        </Flex >
     );
 }

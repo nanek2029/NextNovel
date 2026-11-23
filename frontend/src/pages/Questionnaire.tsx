@@ -12,7 +12,17 @@ const genres = [
     'Science Fiction',
     'Mystery',
     'Romance',
-    'Thriller'
+    'Thriller',
+    'Horror',
+    'Historical Fiction',
+    'Adventure',
+    'Young Adult',
+    'Biography & Autobiography',
+    'History',
+    'Self-Help',
+    'Business & Economics',
+    'Health & Fitness',
+    'Music',
 ];
 
 export default function Questionnaire() {
